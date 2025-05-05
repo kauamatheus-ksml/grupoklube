@@ -10,7 +10,224 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarNavegacao();
     carregarDadosContato();
     inicializarModais();
+    // Adicionar após a inicialização (linha ~45)
+    // Implementação de WebSockets para atualizações em tempo real
+    let socket;
 
+    function inicializarWebSocket() {
+        // Usar WebSocket ou um polyfill como Socket.IO se preferir
+        socket = new WebSocket('wss://' + window.location.host + '/ws/admin');
+        
+        socket.onopen = function() {
+            console.log('Conexão WebSocket estabelecida');
+        };
+        
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'novo_contato') {
+                // Adicionar notificação
+                mostrarNotificacao('Novo contato recebido', `${data.nome} da clínica ${data.clinica} enviou um contato.`);
+                
+                // Atualizar dados
+                carregarDadosContato();
+                
+                // Destacar card com efeito visual
+                destacarCardPendentes();
+            }
+        };
+        
+        socket.onerror = function(error) {
+            console.error('Erro na conexão WebSocket:', error);
+            // Fallback para polling se WebSocket falhar
+            iniciarPolling();
+        };
+        
+        socket.onclose = function() {
+            console.log('Conexão WebSocket fechada');
+            // Tentar reconectar após 5 segundos
+            setTimeout(inicializarWebSocket, 5000);
+        };
+    }
+
+    // Polling como fallback para navegadores sem suporte a WebSocket
+    function iniciarPolling() {
+        console.log('Iniciando polling para atualizações');
+        setInterval(carregarDadosContato, 30000); // Verificar a cada 30 segundos
+    }
+
+    // Exibir notificação visual
+    function mostrarNotificacao(titulo, mensagem) {
+        // Verificar suporte a notificações
+        if (!("Notification" in window)) {
+            alert(titulo + ": " + mensagem);
+            return;
+        }
+        
+        // Se já temos permissão
+        if (Notification.permission === "granted") {
+            const notification = new Notification(titulo, {
+                body: mensagem,
+                icon: 'assents/img/klubedigitallogo.svg'
+            });
+            
+            notification.onclick = function() {
+                window.focus();
+                this.close();
+            };
+        }
+        // Se não solicitamos permissão ainda
+        else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(function(permission) {
+                if (permission === "granted") {
+                    mostrarNotificacao(titulo, mensagem);
+                }
+            });
+        }
+        
+        // Criar notificação dentro do sistema também
+        const notificacoesLista = document.querySelector('.notification-list');
+        if (notificacoesLista) {
+            const novaNotificacao = document.createElement('div');
+            novaNotificacao.className = 'notification-item unread new-notification';
+            novaNotificacao.innerHTML = `
+                <div class="notification-content">${mensagem}</div>
+                <div class="notification-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            notificacoesLista.prepend(novaNotificacao);
+            
+            // Atualizar contador
+            const badge = document.querySelector('.notification-bell .badge');
+            if (badge) {
+                badge.textContent = parseInt(badge.textContent || 0) + 1;
+            }
+        }
+        
+        // Tocar um som sutil
+        const audio = new Audio('assents/sound/notification.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Não foi possível tocar o som de notificação'));
+    }
+
+    function destacarCardPendentes() {
+        const cardPendentes = document.querySelector('.card-pendentes');
+        if (cardPendentes) {
+            cardPendentes.classList.add('highlight');
+            setTimeout(() => {
+                cardPendentes.classList.remove('highlight');
+            }, 3000);
+        }
+    }
+
+    // Chamar a inicialização de WebSocket após carregar os dados iniciais
+    inicializarWebSocket();
+
+    // Adicionar sistema de notificação no header
+    function adicionarComponenteNotificacao() {
+        const adminUser = document.querySelector('.admin-user');
+        if (!adminUser) return;
+        
+        const notificationBell = document.createElement('div');
+        notificationBell.className = 'notification-bell';
+        notificationBell.innerHTML = `
+            <div class="bell-icon">🔔</div>
+            <div class="badge">0</div>
+            <div class="notification-dropdown">
+                <div class="notification-header">
+                    <h3>Notificações</h3>
+                    <span class="clear-all">Limpar todas</span>
+                </div>
+                <div class="notification-list">
+                    <!-- Notificações serão inseridas aqui -->
+                </div>
+                <div class="notification-footer">
+                    <a href="#">Ver todas</a>
+                </div>
+            </div>
+        `;
+        
+        adminUser.prepend(notificationBell);
+        
+        // Adicionar event listener para mostrar/esconder dropdown
+        notificationBell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = this.querySelector('.notification-dropdown');
+            dropdown.classList.toggle('show');
+        });
+        
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function() {
+            const dropdown = document.querySelector('.notification-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+        });
+        
+        // Limpar notificações
+        const clearAll = notificationBell.querySelector('.clear-all');
+        clearAll.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const notificationList = document.querySelector('.notification-list');
+            if (notificationList) {
+                notificationList.innerHTML = '';
+            }
+            
+            const badge = document.querySelector('.notification-bell .badge');
+            if (badge) {
+                badge.textContent = '0';
+            }
+        });
+    }
+
+    // Adicionar ao final da função inicializarNavegacao
+    // Adicionar ao início da função inicializarNavegacao()
+    function inicializarNavegacao() {
+        // Funcionalidade para toggle da sidebar em mobile
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const sidebar = document.querySelector('.admin-sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        
+        if (mobileMenuBtn && sidebar && overlay) {
+            mobileMenuBtn.addEventListener('click', function() {
+                this.classList.toggle('active');
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                
+                // Impedir scroll no body quando sidebar estiver aberta
+                if (sidebar.classList.contains('active')) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Fechar sidebar ao clicar no overlay
+            overlay.addEventListener('click', function() {
+                mobileMenuBtn.classList.remove('active');
+                sidebar.classList.remove('active');
+                this.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+            
+            // Fechar sidebar ao clicar em um link
+            const sidebarLinks = sidebar.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        mobileMenuBtn.classList.remove('active');
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                });
+            });
+        }
+        
+        // Resto do código original da função...
+        const navLinks = document.querySelectorAll('.sidebar-nav a');
+        //...
+    }
+    adicionarComponenteNotificacao();
     // Funções de navegação entre seções
     function inicializarNavegacao() {
         const navLinks = document.querySelectorAll('.sidebar-nav a');
@@ -46,8 +263,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Carregamento e atualização de dados
+    // Substituir a função carregarDadosContato por esta versão melhorada
     function carregarDadosContato() {
-        fetch('dados/contatos.json')
+        // Mostrar indicador de carregamento sutil
+        const dashboardSection = document.getElementById('dashboard');
+        if (dashboardSection) {
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'corner-loading';
+            loadingIndicator.innerHTML = 'Atualizando...';
+            dashboardSection.appendChild(loadingIndicator);
+        }
+        
+        return fetch('dados/contatos.json?' + new Date().getTime()) // Evitar cache
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Arquivo de contatos não encontrado');
@@ -60,15 +287,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 atualizarTabelaContatos();
                 atualizarCardsAtendimentos();
                 inicializarGraficos();
+                
+                // Remover indicador de carregamento
+                const loadingIndicator = document.querySelector('.corner-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.remove();
+                }
+                
+                return data; // Retornar os dados para uso em promessas encadeadas
             })
             .catch(error => {
                 console.error('Erro ao carregar dados:', error);
-                // Criar dados de exemplo para demonstração
-                dadosContato = criarDadosExemplo();
-                atualizarDashboard();
-                atualizarTabelaContatos();
-                atualizarCardsAtendimentos();
-                inicializarGraficos();
+                
+                // Remover indicador de carregamento
+                const loadingIndicator = document.querySelector('.corner-loading');
+                if (loadingIndicator) {
+                    loadingIndicator.remove();
+                }
+                
+                // Criar dados de exemplo para demonstração ou manter dados anteriores
+                if (!dadosContato) {
+                    dadosContato = criarDadosExemplo();
+                    atualizarDashboard();
+                    atualizarTabelaContatos();
+                    atualizarCardsAtendimentos();
+                    inicializarGraficos();
+                }
+                
+                // Mostrar notificação de erro
+                const errorToast = document.createElement('div');
+                errorToast.className = 'error-toast';
+                errorToast.textContent = 'Erro ao atualizar dados. Tentando novamente em 30s...';
+                document.body.appendChild(errorToast);
+                
+                setTimeout(() => {
+                    errorToast.remove();
+                }, 5000);
+                
+                return dadosContato;
             });
     }
 

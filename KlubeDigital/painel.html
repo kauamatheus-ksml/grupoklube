@@ -7,16 +7,23 @@
     <link rel="stylesheet" href="assents/css/admin-style.css">
 </head>
 <body>
+    <div class="sidebar-overlay"></div>
     <!-- Header -->
     <header id="admin-header">
         <div class="container admin-header-container">
+            <div class="mobile-menu-btn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
             <div class="logo">
                 <img src="assents/img/klubedigitallogo.svg" alt="Klube Digital Logo" class="logo-img">
                 <h1>Klube Digital</h1>
             </div>
             <div class="admin-user">
+                <!-- O componente de notificação será injetado aqui pelo JavaScript -->
                 <span class="admin-name">Administrador</span>
-                <a href="#" class="admin-logout">Sair</a>
+                <a href="logout.php" class="admin-logout">Sair</a>
             </div>
         </div>
     </header>
