@@ -9,13 +9,23 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
     exit;
 }
 
-// Definir credenciais de acesso (em um sistema real, essas credenciais estariam em um banco de dados)
+// Carregar usuários do arquivo JSON (se existir)
+$usuarios_arquivo = __DIR__ . '/dados/usuarios.json';
 $usuarios = [
     'admin' => [
         'senha' => '$2y$10$2X5XOBRrm4ZbYYBh0jnqX.ptrmmJEoGHs5AuTGCGNBL4MgYf1SOa2', // "admin123" com hash
         'nome' => 'Administrador'
     ]
 ];
+
+// Carregar usuários adicionais do arquivo JSON
+if (file_exists($usuarios_arquivo)) {
+    $json_content = file_get_contents($usuarios_arquivo);
+    $dados = json_decode($json_content, true);
+    if ($dados && isset($dados['usuarios']) && is_array($dados['usuarios'])) {
+        $usuarios = array_merge($usuarios, $dados['usuarios']);
+    }
+}
 
 $erro = '';
 
@@ -35,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_logged_in'] = true;
         $_SESSION['admin_username'] = $username;
         $_SESSION['admin_name'] = $usuarios[$username]['nome'];
+        $_SESSION['admin_nivel'] = $usuarios[$username]['nivel'] ?? 'admin';
         
         // Redirecionar para o painel
         header('Location: admin-painel.php');
@@ -162,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: underline;
         }
     </style>
+    <link rel="shortcut icon" type="image/jpg" href="assents/img/klubedigital.ico"/>
 </head>
 <body>
     <div class="login-container">
