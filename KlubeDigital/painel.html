@@ -305,7 +305,7 @@
     <!-- JavaScript de inicialização rápida para garantir que a sidebar funcione -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Inicialização básica da sidebar para mobile
+            // Inicialização da sidebar para mobile
             const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
             const sidebar = document.querySelector('.admin-sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
@@ -336,7 +336,7 @@
                 // Fechar sidebar ao clicar em um link
                 const sidebarLinks = sidebar.querySelectorAll('a');
                 sidebarLinks.forEach(link => {
-                    link.addEventListener('click', function() {
+                    link.addEventListener('click', function(e) {
                         if (window.innerWidth <= 768) {
                             mobileMenuBtn.classList.remove('active');
                             sidebar.classList.remove('active');
@@ -344,7 +344,8 @@
                             document.body.style.overflow = '';
                         }
                         
-                        // Navegação básica entre seções
+                        // Navegação entre seções
+                        e.preventDefault(); // Impedir comportamento padrão do link
                         const targetSection = this.getAttribute('data-section');
                         if (targetSection) {
                             // Atualizar navegação

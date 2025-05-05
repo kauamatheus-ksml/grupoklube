@@ -1154,7 +1154,7 @@ function atualizarDados(id, novoStatus, observacao) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            console.log('Status atualizado com sucesso no servidor');
+            console.log('Status atualizado com sucesso no servidor')
             // Recarregar os dados atualizados
             if (typeof carregarDadosContato === 'function') {
                 carregarDadosContato();
