@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Atendimento - Klube Digital</title>
     <link rel="stylesheet" href="assents/css/admin-style.css">
+    <link rel="shortcut icon" type="image/jpg" href="assents/img/klubedigital.ico"/>
 </head>
 <body>
     <!-- Overlay para a sidebar em mobile -->
@@ -302,38 +303,117 @@
         </div>
     </div>
     
-    <!-- JavaScript de inicialização rápida para garantir que a sidebar funcione -->
+    <!-- JavaScript para a Sidebar e Navegação -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificar se os elementos existem antes de tentar interagir com eles
-            if (document.querySelector('.mobile-menu-btn') && 
-                document.querySelector('.admin-sidebar') && 
-                document.querySelector('.sidebar-overlay')) {
-                
-                // Código de inicialização básico para garantir que a sidebar funcione
-                // mesmo se houver problema com o arquivo admin.js
-                const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-                const sidebar = document.querySelector('.admin-sidebar');
-                const overlay = document.querySelector('.sidebar-overlay');
-                
+            // Mobile Menu Toggle
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const sidebar = document.querySelector('.admin-sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            
+            if (mobileMenuBtn && sidebar && overlay) {
+                // Toggle sidebar ao clicar no botão mobile
                 mobileMenuBtn.addEventListener('click', function() {
                     this.classList.toggle('active');
                     sidebar.classList.toggle('active');
                     overlay.classList.toggle('active');
+                    
+                    // Impedir scroll no body quando sidebar estiver aberta
+                    if (sidebar.classList.contains('active')) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = '';
+                    }
                 });
                 
+                // Fechar sidebar ao clicar no overlay
                 overlay.addEventListener('click', function() {
                     mobileMenuBtn.classList.remove('active');
                     sidebar.classList.remove('active');
                     this.classList.remove('active');
+                    document.body.style.overflow = '';
                 });
             }
+            
+            // Funcionalidade de navegação entre seções
+            const navLinks = document.querySelectorAll('.sidebar-nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetSection = this.getAttribute('data-section');
+                    
+                    // Atualizar navegação
+                    document.querySelectorAll('.sidebar-nav li').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    this.parentElement.classList.add('active');
+                    
+                    // Mostrar seção correspondente
+                    document.querySelectorAll('.content-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    
+                    const targetElement = document.getElementById(targetSection);
+                    if (targetElement) {
+                        targetElement.classList.add('active');
+                    }
+                    
+                    // Fechar o menu mobile se estiver aberto
+                    if (window.innerWidth <= 768) {
+                        mobileMenuBtn.classList.remove('active');
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                });
+            });
+            
+            // Inicializações de Modal
+            function initModals() {
+                // Modal de Contato
+                const modalContato = document.getElementById('modal-contato');
+                const modalContatoClose = document.getElementById('modal-contato-close');
+                
+                if (modalContato && modalContatoClose) {
+                    modalContatoClose.addEventListener('click', () => {
+                        modalContato.style.display = 'none';
+                    });
+                    
+                    window.addEventListener('click', (event) => {
+                        if (event.target === modalContato) {
+                            modalContato.style.display = 'none';
+                        }
+                    });
+                }
+                
+                // Modal de Status
+                const modalStatus = document.getElementById('modal-status');
+                const modalStatusClose = document.getElementById('modal-status-close');
+                const btnCancelStatus = document.getElementById('btn-cancel-status');
+                
+                if (modalStatus && modalStatusClose && btnCancelStatus) {
+                    modalStatusClose.addEventListener('click', () => {
+                        modalStatus.style.display = 'none';
+                    });
+                    
+                    btnCancelStatus.addEventListener('click', () => {
+                        modalStatus.style.display = 'none';
+                    });
+                    
+                    window.addEventListener('click', (event) => {
+                        if (event.target === modalStatus) {
+                            modalStatus.style.display = 'none';
+                        }
+                    });
+                }
+            }
+            
+            initModals();
         });
     </script>
-    <script src="assents/js/admin.js"></script>
-
-    <!-- JavaScript principal -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <!-- Scripts para funcionalidades do Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assents/js/admin.js"></script>
 </body>
 </html>

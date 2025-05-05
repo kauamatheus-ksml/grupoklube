@@ -20,9 +20,9 @@
             "telefone": "5534991191534",
             "clinica": "Kaua",
             "mensagem": "Oi",
-            "status": "cancelado",
+            "status": "concluido",
             "origem": "formulario_site",
-            "whatsapp_link": "https:\/\/api.whatsapp.com\/send?phone=5534991191534&text=Ol%C3%A1+Kaua+Lopes%2C+referente+ao+seu+atendimento+CON002+na+Klube+Digital.+Seu+atendimento+foi+cancelado.+Se+precisar+de+algo+mais%2C+fique+%C3%A0+vontade+para+entrar+em+contato."
+            "whatsapp_link": "https:\/\/api.whatsapp.com\/send?phone=5534991191534&text=Ol%C3%A1+Kaua+Lopes%2C+referente+ao+seu+atendimento+CON002+na+Klube+Digital.+Seu+atendimento+foi+conclu%C3%ADdo.+Agradecemos+a+confian%C3%A7a+em+nossos+servi%C3%A7os%21"
         },
         {
             "id": "CON003",
@@ -56,14 +56,14 @@
             "telefone": "5538991045205",
             "clinica": "Kaua",
             "mensagem": "Teste 05",
-            "status": "pendente",
+            "status": "concluido",
             "origem": "formulario_site",
-            "whatsapp_link": "https:\/\/api.whatsapp.com\/send?phone=5538991045205&text=Ol%C3%A1+Kaua%2C+recebemos+sua+solicita%C3%A7%C3%A3o+CON005+na+Klube+Digital.+Como+podemos+ajudar+com+seu+atendimento%3F"
+            "whatsapp_link": "https:\/\/api.whatsapp.com\/send?phone=5538991045205&text=Ol%C3%A1+Kaua%2C+referente+ao+seu+atendimento+CON005+na+Klube+Digital.+Seu+atendimento+foi+conclu%C3%ADdo.+Agradecemos+a+confian%C3%A7a+em+nossos+servi%C3%A7os%21"
         }
     ],
     "meta": {
         "total_registros": 5,
-        "ultima_atualizacao": "2025-05-05T10:54:59-03:00",
+        "ultima_atualizacao": "2025-05-05T12:03:53-03:00",
         "status_disponiveis": [
             "pendente",
             "em_atendimento",
