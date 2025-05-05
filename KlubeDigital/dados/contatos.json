@@ -1,0 +1,39 @@
+{
+    "contatos": [
+        {
+            "id": "CON001",
+            "data": "2025-05-05T10:09:15-03:00",
+            "nome": "Kaua Lop&eacute;s",
+            "email": "kauanupix@gmail.com",
+            "telefone": "5538991045205",
+            "clinica": "Kaua Lop&eacute;s",
+            "mensagem": "fgs",
+            "status": "pendente",
+            "origem": "formulario_site",
+            "whatsapp_link": "https:\/\/api.whatsapp.com\/send?phone=5538991045205&text=Ol%C3%A1+Kaua+Lop%26eacute%3Bs%2C+recebemos+sua+solicita%C3%A7%C3%A3o+CON001+na+Klube+Digital.+Como+podemos+ajudar+com+seu+atendimento%3F"
+        }
+    ],
+    "meta": {
+        "total_registros": 1,
+        "ultima_atualizacao": "2025-05-05T10:09:15-03:00",
+        "status_disponiveis": [
+            "pendente",
+            "em_atendimento",
+            "concluido",
+            "cancelado"
+        ],
+        "origens_disponiveis": [
+            "formulario_site",
+            "telefone",
+            "email",
+            "indicacao",
+            "redes_sociais"
+        ]
+    },
+    "config": {
+        "mensagem_padrao_whatsapp": "Olá {nome}, referente ao seu atendimento {id} na Klube Digital. {mensagem_personalizada}",
+        "tempo_resposta_maximo": "24h",
+        "notificacoes_email": true,
+        "notificacoes_sistema": true
+    }
+}

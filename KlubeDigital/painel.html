@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Atendimento - Klube Digital</title>
+    <link rel="stylesheet" href="assents/css/admin-style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="admin-header">
+        <div class="container admin-header-container">
+            <div class="logo">
+                <img src="assents/img/klubedigitallogo.svg" alt="Klube Digital Logo" class="logo-img">
+                <h1>Klube Digital</h1>
+            </div>
+            <div class="admin-user">
+                <span class="admin-name">Administrador</span>
+                <a href="#" class="admin-logout">Sair</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="active"><a href="#" data-section="dashboard"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#" data-section="contatos"><span class="icon">👥</span> Contatos</a></li>
+                <li><a href="#" data-section="atendimentos"><span class="icon">💬</span> Atendimentos</a></li>
+                <li><a href="#" data-section="relatorios"><span class="icon">📈</span> Relatórios</a></li>
+                <li><a href="#" data-section="configuracoes"><span class="icon">⚙️</span> Configurações</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h2>Dashboard</h2>
+                <p>Visão geral dos atendimentos</p>
+            </div>
+            
+            <div class="dashboard-cards">
+                <div class="card card-pendentes">
+                    <div class="card-content">
+                        <h3>Pendentes</h3>
+                        <p class="count" id="count-pendentes">0</p>
+                    </div>
+                    <div class="card-icon">📝</div>
+                </div>
+                
+                <div class="card card-em-atendimento">
+                    <div class="card-content">
+                        <h3>Em Atendimento</h3>
+                        <p class="count" id="count-em-atendimento">0</p>
+                    </div>
+                    <div class="card-icon">🔄</div>
+                </div>
+                
+                <div class="card card-concluidos">
+                    <div class="card-content">
+                        <h3>Concluídos</h3>
+                        <p class="count" id="count-concluidos">0</p>
+                    </div>
+                    <div class="card-icon">✅</div>
+                </div>
+                
+                <div class="card card-total">
+                    <div class="card-content">
+                        <h3>Total</h3>
+                        <p class="count" id="count-total">0</p>
+                    </div>
+                    <div class="card-icon">📊</div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h3>Atendimentos Recentes</h3>
+            </div>
+            
+            <div class="recent-contacts" id="recent-contacts">
+                <div class="loading">Carregando...</div>
+            </div>
+        </section>
+
+        <!-- Contatos Section -->
+        <section id="contatos" class="content-section">
+            <div class="section-header">
+                <h2>Contatos</h2>
+                <p>Gerencie todos os contatos recebidos</p>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="search-box">
+                    <input type="text" id="search-contatos" placeholder="Buscar por nome, clínica...">
+                    <button id="btn-search"><span class="icon">🔍</span></button>
+                </div>
+                
+                <div class="filter-status">
+                    <label for="filter-status">Status:</label>
+                    <select id="filter-status">
+                        <option value="todos">Todos</option>
+                        <option value="pendente">Pendentes</option>
+                        <option value="em_atendimento">Em Atendimento</option>
+                        <option value="concluido">Concluídos</option>
+                        <option value="cancelado">Cancelados</option>
+                    </select>
+                </div>
+                
+                <button id="btn-refresh" class="btn-refresh">Atualizar</button>
+            </div>
+            
+            <div class="contatos-table-container" id="contatos-table-container">
+                <div class="loading">Carregando contatos...</div>
+            </div>
+        </section>
+
+        <!-- Atendimentos Section -->
+        <section id="atendimentos" class="content-section">
+            <div class="section-header">
+                <h2>Atendimentos</h2>
+                <p>Gerencie os atendimentos em andamento</p>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="filter-status">
+                    <label for="filter-atendimentos-status">Status:</label>
+                    <select id="filter-atendimentos-status">
+                        <option value="em_atendimento">Em Atendimento</option>
+                        <option value="todos">Todos</option>
+                        <option value="pendente">Pendentes</option>
+                        <option value="concluido">Concluídos</option>
+                    </select>
+                </div>
+                
+                <button id="btn-atendimentos-refresh" class="btn-refresh">Atualizar</button>
+            </div>
+            
+            <div class="atendimentos-cards" id="atendimentos-cards">
+                <div class="loading">Carregando atendimentos...</div>
+            </div>
+        </section>
+
+        <!-- Relatórios Section -->
+        <section id="relatorios" class="content-section">
+            <div class="section-header">
+                <h2>Relatórios</h2>
+                <p>Estatísticas e análises de atendimentos</p>
+            </div>
+            
+            <div class="filter-controls">
+                <div class="date-range">
+                    <label for="date-start">De:</label>
+                    <input type="date" id="date-start">
+                    
+                    <label for="date-end">Até:</label>
+                    <input type="date" id="date-end">
+                </div>
+                
+                <button id="btn-generate-report" class="btn-primary">Gerar Relatório</button>
+            </div>
+            
+            <div class="report-charts">
+                <div class="chart-container">
+                    <h3>Atendimentos por Status</h3>
+                    <canvas id="chart-status"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Atendimentos por Dia</h3>
+                    <canvas id="chart-timeline"></canvas>
+                </div>
+            </div>
+            
+            <div class="report-metrics">
+                <div class="metric-card">
+                    <h3>Tempo Médio de Resposta</h3>
+                    <p class="metric" id="metric-tempo-resposta">--</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>Taxa de Conversão</h3>
+                    <p class="metric" id="metric-taxa-conversao">--</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>Taxa de Conclusão</h3>
+                    <p class="metric" id="metric-taxa-conclusao">--</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Configurações Section -->
+        <section id="configuracoes" class="content-section">
+            <div class="section-header">
+                <h2>Configurações</h2>
+                <p>Personalize suas configurações de atendimento</p>
+            </div>
+            
+            <div class="config-form-container">
+                <form id="config-form">
+                    <div class="form-group">
+                        <h3>Configurações Gerais</h3>
+                        
+                        <div class="input-group">
+                            <label for="config-mensagem-padrao">Mensagem Padrão WhatsApp:</label>
+                            <textarea id="config-mensagem-padrao" rows="3">Olá {nome}, referente ao seu atendimento {id} na Klube Digital. {mensagem_personalizada}</textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="config-tempo-resposta">Tempo Máximo de Resposta:</label>
+                            <input type="text" id="config-tempo-resposta" value="24h">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <h3>Notificações</h3>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="config-notificacoes-email" checked>
+                            <label for="config-notificacoes-email">Receber notificações por e-mail</label>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="config-notificacoes-sistema" checked>
+                            <label for="config-notificacoes-sistema">Receber notificações no sistema</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <h3>Usuários</h3>
+                        
+                        <div class="users-list" id="users-list">
+                            <div class="user-item">
+                                <span class="user-name">Administrador</span>
+                                <span class="user-email">admin@klubedigital.com.br</span>
+                                <span class="user-role">Administrador</span>
+                                <div class="user-actions">
+                                    <button type="button" class="btn-edit-user">Editar</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="btn-add-user" class="btn-secondary">Adicionar Usuário</button>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Salvar Configurações</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Contato -->
+    <div id="modal-contato" class="modal">
+        <div class="modal-content">
+            <span class="close" id="modal-contato-close">&times;</span>
+            <div id="modal-contato-content">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Atualização de Status -->
+    <div id="modal-status" class="modal">
+        <div class="modal-content">
+            <span class="close" id="modal-status-close">&times;</span>
+            <h2>Atualizar Status</h2>
+            <form id="form-atualizar-status">
+                <input type="hidden" id="status-contato-id">
+                <div class="form-group">
+                    <label for="status-select">Novo Status:</label>
+                    <select id="status-select">
+                        <option value="pendente">Pendente</option>
+                        <option value="em_atendimento">Em Atendimento</option>
+                        <option value="concluido">Concluído</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status-observacao">Observação:</label>
+                    <textarea id="status-observacao" rows="3" placeholder="Adicione uma observação (opcional)"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Atualizar</button>
+                    <button type="button" id="btn-cancel-status" class="btn-secondary">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assents/js/admin.js"></script>
+</body>
+</html>

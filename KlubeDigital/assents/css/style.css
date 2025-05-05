@@ -39,7 +39,7 @@ header {
 }
 
 header.scrolled {
-    padding: 10px 0;
+    padding: 5px 0;
     background-color: var(--secondary);
 }
 
@@ -47,7 +47,7 @@ header.scrolled {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 0;
+    padding: 15px 0;
 }
 
 .logo {
@@ -55,8 +55,9 @@ header.scrolled {
     align-items: center;
 }
 
-.logo img {
+.logo-img {
     height: 40px;
+    width: auto;
     margin-right: 10px;
 }
 
@@ -105,6 +106,7 @@ nav ul li a:hover::after {
     width: 30px;
     height: 20px;
     cursor: pointer;
+    z-index: 1001;
 }
 
 .mobile-menu-btn span {
@@ -112,6 +114,18 @@ nav ul li a:hover::after {
     height: 2px;
     background-color: white;
     transition: all 0.3s ease;
+}
+
+.mobile-menu-btn.active span:nth-child(1) {
+    transform: translateY(9px) rotate(45deg);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+    transform: translateY(-9px) rotate(-45deg);
 }
 
 /* Hero Section */
@@ -744,9 +758,23 @@ footer {
 }
 
 /* Responsive Styles */
+@media (max-width: 1200px) {
+    .container {
+        max-width: 992px;
+    }
+}
+
 @media (max-width: 992px) {
+    .container {
+        max-width: 768px;
+    }
+    
     .header-container {
-        padding: 15px 0;
+        padding: 12px 0;
+    }
+    
+    .logo-img {
+        height: 35px;
     }
     
     .logo h1 {
@@ -761,37 +789,65 @@ footer {
         padding-right: 0;
         margin-bottom: 50px;
     }
+    
+    .why-us-image img {
+        max-width: 100%;
+    }
+    
+    .section-title h2 {
+        font-size: 2.2rem;
+    }
 }
 
 @media (max-width: 768px) {
+    .container {
+        max-width: 576px;
+    }
+    
     .mobile-menu-btn {
         display: flex;
     }
     
+    .logo-img {
+        height: 32px;
+    }
+    
+    .logo h1 {
+        font-size: 1.2rem;
+    }
+    
     nav {
-        position: absolute;
-        top: 100%;
+        position: fixed;
+        top: 0;
         left: 0;
         width: 100%;
-        background-color: var(--secondary);
-        padding: 0;
         height: 0;
+        background-color: var(--secondary);
         overflow: hidden;
-        transition: height 0.3s ease;
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
     }
     
     nav.active {
-        height: auto;
-        padding: 20px 0;
+        height: 100vh;
+        opacity: 1;
+        visibility: visible;
+        padding: 80px 0 40px;
     }
     
     nav ul {
         flex-direction: column;
         align-items: center;
+        padding-top: 20px;
     }
     
     nav ul li {
         margin: 15px 0;
+    }
+    
+    nav ul li a {
+        font-size: 1.2rem;
     }
     
     .hero-content h1 {
@@ -808,28 +864,130 @@ footer {
     
     .cta-buttons {
         flex-direction: column;
+        align-items: center;
     }
     
     .cta-buttons a {
         width: 100%;
+        max-width: 250px;
         margin-bottom: 15px;
-    }
-}
-
-@media (max-width: 576px) {
-    .hero-content h1 {
-        font-size: 1.8rem;
+        text-align: center;
     }
     
-    .service-card {
-        padding: 30px 20px;
+    .testimonial-slide .quote {
+        font-size: 1.2rem;
     }
     
     .testimonial-slide {
         padding: 30px 20px;
     }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 20px 20px;
+    }
+    
+    .logo-img {
+        height: 28px;
+    }
+    
+    .logo h1 {
+        font-size: 1.1rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-content p {
+        font-size: 0.9rem;
+    }
+    
+    .hero-cta {
+        padding: 12px 25px;
+        font-size: 0.9rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.8rem;
+    }
+    
+    .section-title p {
+        font-size: 0.9rem;
+    }
+    
+    .service-card {
+        padding: 25px 15px;
+    }
+    
+    .service-card h3 {
+        font-size: 1.3rem;
+    }
+    
+    .service-card p {
+        font-size: 0.9rem;
+    }
+    
+    .why-us-content h2 {
+        font-size: 1.8rem;
+    }
+    
+    .cta-content h2 {
+        font-size: 1.8rem;
+    }
+    
+    .cta-content p {
+        font-size: 0.9rem;
+    }
+    
+    .testimonial-slide .quote {
+        font-size: 1rem;
+    }
+    
+    .contact-info h3 {
+        font-size: 1.5rem;
+    }
     
     .contact-form {
-        padding: 30px 20px;
+        padding: 25px 15px;
+    }
+    
+    #hero, #services, #why-us, #testimonials, #contact {
+        padding: 80px 0;
+    }
+}
+
+@media (max-width: 375px) {
+    .logo-img {
+        height: 25px;
+    }
+    
+    .logo h1 {
+        font-size: 1rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .section-title h2 {
+        font-size: 1.5rem;
+    }
+    
+    .service-card {
+        padding: 20px 15px;
+    }
+    
+    .why-us-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .cta-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    #hero, #services, #why-us, #testimonials, #contact {
+        padding: 60px 0;
     }
 }
