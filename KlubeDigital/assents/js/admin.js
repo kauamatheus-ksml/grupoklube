@@ -10,44 +10,50 @@ document.addEventListener('DOMContentLoaded', function() {
     inicializarNavegacao();
     carregarDadosContato();
     inicializarModais();
-    // Adicionar após a inicialização (linha ~45)
+    adicionarComponenteNotificacao();
+    
     // Implementação de WebSockets para atualizações em tempo real
     let socket;
 
     function inicializarWebSocket() {
-        // Usar WebSocket ou um polyfill como Socket.IO se preferir
-        socket = new WebSocket('wss://' + window.location.host + '/ws/admin');
-        
-        socket.onopen = function() {
-            console.log('Conexão WebSocket estabelecida');
-        };
-        
-        socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
+        try {
+            // Usar WebSocket ou um polyfill como Socket.IO se preferir
+            socket = new WebSocket('wss://' + window.location.host + '/ws/admin');
             
-            if (data.type === 'novo_contato') {
-                // Adicionar notificação
-                mostrarNotificacao('Novo contato recebido', `${data.nome} da clínica ${data.clinica} enviou um contato.`);
+            socket.onopen = function() {
+                console.log('Conexão WebSocket estabelecida');
+            };
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
                 
-                // Atualizar dados
-                carregarDadosContato();
-                
-                // Destacar card com efeito visual
-                destacarCardPendentes();
-            }
-        };
-        
-        socket.onerror = function(error) {
-            console.error('Erro na conexão WebSocket:', error);
-            // Fallback para polling se WebSocket falhar
+                if (data.type === 'novo_contato') {
+                    // Adicionar notificação
+                    mostrarNotificacao('Novo contato recebido', `${data.nome} da clínica ${data.clinica} enviou um contato.`);
+                    
+                    // Atualizar dados
+                    carregarDadosContato();
+                    
+                    // Destacar card com efeito visual
+                    destacarCardPendentes();
+                }
+            };
+            
+            socket.onerror = function(error) {
+                console.error('Erro na conexão WebSocket:', error);
+                // Fallback para polling se WebSocket falhar
+                iniciarPolling();
+            };
+            
+            socket.onclose = function() {
+                console.log('Conexão WebSocket fechada');
+                // Tentar reconectar após 5 segundos
+                setTimeout(inicializarWebSocket, 5000);
+            };
+        } catch (error) {
+            console.error('Falha ao inicializar WebSocket:', error);
             iniciarPolling();
-        };
-        
-        socket.onclose = function() {
-            console.log('Conexão WebSocket fechada');
-            // Tentar reconectar após 5 segundos
-            setTimeout(inicializarWebSocket, 5000);
-        };
+        }
     }
 
     // Polling como fallback para navegadores sem suporte a WebSocket
@@ -104,9 +110,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Tocar um som sutil
-        const audio = new Audio('assents/sound/notification.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Não foi possível tocar o som de notificação'));
+        try {
+            const audio = new Audio('assents/sound/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Não foi possível tocar o som de notificação'));
+        } catch (e) {
+            console.log('Não foi possível tocar o som de notificação');
+        }
     }
 
     function destacarCardPendentes() {
@@ -119,8 +129,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Chamar a inicialização de WebSocket após carregar os dados iniciais
-    inicializarWebSocket();
+    // Inicializar o WebSocket após carregar os dados iniciais
+    setTimeout(() => {
+        try {
+            inicializarWebSocket();
+        } catch (e) {
+            console.error('Falha ao inicializar WebSocket, usando polling como fallback:', e);
+            iniciarPolling();
+        }
+    }, 1000);
 
     // Adicionar sistema de notificação no header
     function adicionarComponenteNotificacao() {
@@ -179,8 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Adicionar ao final da função inicializarNavegacao
-    // Adicionar ao início da função inicializarNavegacao()
+    // Funções de navegação entre seções - VERSÃO CORRIGIDA
     function inicializarNavegacao() {
         // Funcionalidade para toggle da sidebar em mobile
         const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
@@ -223,13 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Resto do código original da função...
-        const navLinks = document.querySelectorAll('.sidebar-nav a');
-        //...
-    }
-    adicionarComponenteNotificacao();
-    // Funções de navegação entre seções
-    function inicializarNavegacao() {
+        // Funcionalidade de navegação entre seções
         const navLinks = document.querySelectorAll('.sidebar-nav a');
         navLinks.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -246,32 +256,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('.content-section').forEach(section => {
                     section.classList.remove('active');
                 });
-                document.getElementById(targetSection).classList.add('active');
                 
-                // Recarregar dados se necessário
-                if (targetSection === 'dashboard') {
-                    atualizarDashboard();
-                } else if (targetSection === 'contatos') {
-                    atualizarTabelaContatos();
-                } else if (targetSection === 'atendimentos') {
-                    atualizarCardsAtendimentos();
-                } else if (targetSection === 'relatorios') {
-                    inicializarGraficos();
+                const targetElement = document.getElementById(targetSection);
+                if (targetElement) {
+                    targetElement.classList.add('active');
+                    
+                    // Recarregar dados se necessário
+                    if (targetSection === 'dashboard') {
+                        atualizarDashboard();
+                    } else if (targetSection === 'contatos') {
+                        atualizarTabelaContatos();
+                    } else if (targetSection === 'atendimentos') {
+                        atualizarCardsAtendimentos();
+                    } else if (targetSection === 'relatorios') {
+                        inicializarGraficos();
+                    }
+                } else {
+                    console.error('Seção alvo não encontrada:', targetSection);
                 }
             });
         });
     }
 
-    // Carregamento e atualização de dados
-    // Substituir a função carregarDadosContato por esta versão melhorada
+    // Carregamento e atualização de dados - VERSÃO MELHORADA
     function carregarDadosContato() {
         // Mostrar indicador de carregamento sutil
         const dashboardSection = document.getElementById('dashboard');
         if (dashboardSection) {
-            const loadingIndicator = document.createElement('div');
-            loadingIndicator.className = 'corner-loading';
-            loadingIndicator.innerHTML = 'Atualizando...';
-            dashboardSection.appendChild(loadingIndicator);
+            // Verificar se já existe um indicador de carregamento
+            let loadingIndicator = document.querySelector('.corner-loading');
+            if (!loadingIndicator) {
+                loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'corner-loading';
+                loadingIndicator.innerHTML = 'Atualizando...';
+                dashboardSection.appendChild(loadingIndicator);
+            }
         }
         
         return fetch('dados/contatos.json?' + new Date().getTime()) // Evitar cache
@@ -283,10 +302,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 dadosContato = data;
-                atualizarDashboard();
-                atualizarTabelaContatos();
-                atualizarCardsAtendimentos();
-                inicializarGraficos();
+                try {
+                    atualizarDashboard();
+                    atualizarTabelaContatos();
+                    atualizarCardsAtendimentos();
+                    inicializarGraficos();
+                } catch (error) {
+                    console.error("Erro ao atualizar UI:", error);
+                }
                 
                 // Remover indicador de carregamento
                 const loadingIndicator = document.querySelector('.corner-loading');
@@ -395,13 +418,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const total = dadosContato.contatos.length;
 
         // Atualizar cards
-        document.getElementById('count-pendentes').textContent = pendentes;
-        document.getElementById('count-em-atendimento').textContent = emAtendimento;
-        document.getElementById('count-concluidos').textContent = concluidos;
-        document.getElementById('count-total').textContent = total;
+        const countPendentes = document.getElementById('count-pendentes');
+        const countEmAtendimento = document.getElementById('count-em-atendimento');
+        const countConcluidos = document.getElementById('count-concluidos');
+        const countTotal = document.getElementById('count-total');
+
+        if (countPendentes) countPendentes.textContent = pendentes;
+        if (countEmAtendimento) countEmAtendimento.textContent = emAtendimento;
+        if (countConcluidos) countConcluidos.textContent = concluidos;
+        if (countTotal) countTotal.textContent = total;
 
         // Contatos recentes
         const recentesContainer = document.getElementById('recent-contacts');
+        if (!recentesContainer) return;
         
         // Ordenar por data (mais recentes primeiro)
         const contatosRecentes = [...dadosContato.contatos]
@@ -465,6 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!dadosContato) return;
         
         const container = document.getElementById('contatos-table-container');
+        if (!container) return;
         
         // Aplicar filtros
         let contatosFiltrados = [...dadosContato.contatos];
@@ -478,10 +508,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (busca.trim() !== '') {
             const termoBusca = busca.toLowerCase();
             contatosFiltrados = contatosFiltrados.filter(c => 
-                c.nome.toLowerCase().includes(termoBusca) || 
-                c.email.toLowerCase().includes(termoBusca) || 
-                c.clinica.toLowerCase().includes(termoBusca) ||
-                c.id.toLowerCase().includes(termoBusca)
+                (c.nome && c.nome.toLowerCase().includes(termoBusca)) || 
+                (c.email && c.email.toLowerCase().includes(termoBusca)) || 
+                (c.clinica && c.clinica.toLowerCase().includes(termoBusca)) ||
+                (c.id && c.id.toLowerCase().includes(termoBusca))
             );
         }
         
@@ -547,9 +577,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!dadosContato) return;
         
         const container = document.getElementById('atendimentos-cards');
+        if (!container) return;
         
         // Obter status do filtro
-        const statusFiltro = document.getElementById('filter-atendimentos-status').value;
+        const statusFilterElement = document.getElementById('filter-atendimentos-status');
+        let statusFiltro = 'todos';
+        
+        if (statusFilterElement) {
+            statusFiltro = statusFilterElement.value;
+        }
         
         // Filtrar contatos pelo status
         let contatosFiltrados = [...dadosContato.contatos];
@@ -612,6 +648,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function inicializarGraficos() {
         if (!dadosContato) return;
         
+        const ctxStatus = document.getElementById('chart-status');
+        const ctxTimeline = document.getElementById('chart-timeline');
+        
+        if (!ctxStatus || !ctxTimeline) return;
+        
         // Dados para o gráfico de status
         const statusCounts = {
             pendente: dadosContato.contatos.filter(c => c.status === 'pendente').length,
@@ -621,36 +662,39 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // Gráfico de Status
-        const ctxStatus = document.getElementById('chart-status').getContext('2d');
-        new Chart(ctxStatus, {
-            type: 'doughnut',
-            data: {
-                labels: ['Pendente', 'Em Atendimento', 'Concluído', 'Cancelado'],
-                datasets: [{
-                    data: [
-                        statusCounts.pendente,
-                        statusCounts.em_atendimento,
-                        statusCounts.concluido,
-                        statusCounts.cancelado
-                    ],
-                    backgroundColor: [
-                        '#ffc107', // warning - pendente
-                        '#17a2b8', // info - em atendimento
-                        '#28a745', // success - concluído
-                        '#dc3545'  // danger - cancelado
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+        try {
+            new Chart(ctxStatus.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendente', 'Em Atendimento', 'Concluído', 'Cancelado'],
+                    datasets: [{
+                        data: [
+                            statusCounts.pendente,
+                            statusCounts.em_atendimento,
+                            statusCounts.concluido,
+                            statusCounts.cancelado
+                        ],
+                        backgroundColor: [
+                            '#ffc107', // warning - pendente
+                            '#17a2b8', // info - em atendimento
+                            '#28a745', // success - concluído
+                            '#dc3545'  // danger - cancelado
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Erro ao criar gráfico de status:', error);
+        }
         
         // Preparar dados para gráfico de linha (últimos 7 dias)
         const hoje = new Date();
@@ -672,37 +716,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Gráfico de Timeline
-        const ctxTimeline = document.getElementById('chart-timeline').getContext('2d');
-        new Chart(ctxTimeline, {
-            type: 'line',
-            data: {
-                labels: contagemPorDia.map(d => d.label),
-                datasets: [{
-                    label: 'Novos Contatos',
-                    data: contagemPorDia.map(d => d.contagem),
-                    backgroundColor: 'rgba(30, 44, 138, 0.2)',
-                    borderColor: 'rgba(30, 44, 138, 1)',
-                    borderWidth: 2,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+        try {
+            new Chart(ctxTimeline.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: contagemPorDia.map(d => d.label),
+                    datasets: [{
+                        label: 'Novos Contatos',
+                        data: contagemPorDia.map(d => d.contagem),
+                        backgroundColor: 'rgba(30, 44, 138, 0.2)',
+                        borderColor: 'rgba(30, 44, 138, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Erro ao criar gráfico de timeline:', error);
+        }
         
         // Calcular métricas
         const totalContatos = dadosContato.contatos.length;
@@ -710,9 +757,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const taxaConclusao = totalContatos > 0 ? (contatosConcluidos / totalContatos * 100).toFixed(1) : 0;
         
         // Atualizar métricas
-        document.getElementById('metric-taxa-conclusao').textContent = `${taxaConclusao}%`;
-        document.getElementById('metric-tempo-resposta').textContent = dadosContato.config.tempo_resposta_maximo || '24h';
-        document.getElementById('metric-taxa-conversao').textContent = `${Math.round(contatosConcluidos / (totalContatos || 1) * 100)}%`;
+        const metricTaxaConclusao = document.getElementById('metric-taxa-conclusao');
+        const metricTempoResposta = document.getElementById('metric-tempo-resposta');
+        const metricTaxaConversao = document.getElementById('metric-taxa-conversao');
+        
+        if (metricTaxaConclusao) metricTaxaConclusao.textContent = `${taxaConclusao}%`;
+        if (metricTempoResposta) metricTempoResposta.textContent = dadosContato.config.tempo_resposta_maximo || '24h';
+        if (metricTaxaConversao) metricTaxaConversao.textContent = `${Math.round(contatosConcluidos / (totalContatos || 1) * 100)}%`;
     }
 
     // Inicializar modais
@@ -721,119 +772,144 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalContato = document.getElementById('modal-contato');
         const modalContatoClose = document.getElementById('modal-contato-close');
         
-        modalContatoClose.addEventListener('click', () => {
-            modalContato.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (event) => {
-            if (event.target === modalContato) {
+        if (modalContato && modalContatoClose) {
+            modalContatoClose.addEventListener('click', () => {
                 modalContato.style.display = 'none';
-            }
-        });
+            });
+            
+            window.addEventListener('click', (event) => {
+                if (event.target === modalContato) {
+                    modalContato.style.display = 'none';
+                }
+            });
+        }
         
         // Modal de Status
         const modalStatus = document.getElementById('modal-status');
         const modalStatusClose = document.getElementById('modal-status-close');
         const btnCancelStatus = document.getElementById('btn-cancel-status');
         
-        modalStatusClose.addEventListener('click', () => {
-            modalStatus.style.display = 'none';
-        });
-        
-        btnCancelStatus.addEventListener('click', () => {
-            modalStatus.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (event) => {
-            if (event.target === modalStatus) {
+        if (modalStatus && modalStatusClose && btnCancelStatus) {
+            modalStatusClose.addEventListener('click', () => {
                 modalStatus.style.display = 'none';
+            });
+            
+            btnCancelStatus.addEventListener('click', () => {
+                modalStatus.style.display = 'none';
+            });
+            
+            window.addEventListener('click', (event) => {
+                if (event.target === modalStatus) {
+                    modalStatus.style.display = 'none';
+                }
+            });
+            
+            // Form de atualização de status
+            const formStatus = document.getElementById('form-atualizar-status');
+            if (formStatus) {
+                formStatus.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const id = document.getElementById('status-contato-id').value;
+                    const novoStatus = document.getElementById('status-select').value;
+                    const observacao = document.getElementById('status-observacao').value;
+                    
+                    atualizarStatusContato(id, novoStatus, observacao);
+                    modalStatus.style.display = 'none';
+                });
             }
-        });
-        
-        // Form de atualização de status
-        const formStatus = document.getElementById('form-atualizar-status');
-        formStatus.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const id = document.getElementById('status-contato-id').value;
-            const novoStatus = document.getElementById('status-select').value;
-            const observacao = document.getElementById('status-observacao').value;
-            
-            atualizarStatusContato(id, novoStatus, observacao);
-            modalStatus.style.display = 'none';
-        });
+        }
         
         // Filtros
         const filterStatus = document.getElementById('filter-status');
-        filterStatus.addEventListener('change', () => {
-            filtroAtual = filterStatus.value;
-            atualizarTabelaContatos();
-        });
+        if (filterStatus) {
+            filterStatus.addEventListener('change', () => {
+                filtroAtual = filterStatus.value;
+                atualizarTabelaContatos();
+            });
+        }
         
         const searchContatos = document.getElementById('search-contatos');
         const btnSearch = document.getElementById('btn-search');
         
-        btnSearch.addEventListener('click', () => {
-            busca = searchContatos.value;
-            atualizarTabelaContatos();
-        });
-        
-        searchContatos.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
+        if (searchContatos && btnSearch) {
+            btnSearch.addEventListener('click', () => {
                 busca = searchContatos.value;
                 atualizarTabelaContatos();
-            }
-        });
+            });
+            
+            searchContatos.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    busca = searchContatos.value;
+                    atualizarTabelaContatos();
+                }
+            });
+        }
         
         const btnRefresh = document.getElementById('btn-refresh');
-        btnRefresh.addEventListener('click', () => {
-            carregarDadosContato();
-        });
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', () => {
+                carregarDadosContato();
+            });
+        }
         
         // Filtro de atendimentos
         const filterAtendimentosStatus = document.getElementById('filter-atendimentos-status');
-        filterAtendimentosStatus.addEventListener('change', () => {
-            atualizarCardsAtendimentos();
-        });
+        if (filterAtendimentosStatus) {
+            filterAtendimentosStatus.addEventListener('change', () => {
+                atualizarCardsAtendimentos();
+            });
+        }
         
         const btnAtendimentosRefresh = document.getElementById('btn-atendimentos-refresh');
-        btnAtendimentosRefresh.addEventListener('click', () => {
-            carregarDadosContato();
-        });
+        if (btnAtendimentosRefresh) {
+            btnAtendimentosRefresh.addEventListener('click', () => {
+                carregarDadosContato();
+            });
+        }
         
         // Geração de relatórios
         const btnGenerateReport = document.getElementById('btn-generate-report');
-        btnGenerateReport.addEventListener('click', () => {
-            const dateStart = document.getElementById('date-start').value;
-            const dateEnd = document.getElementById('date-end').value;
-            
-            if (dateStart && dateEnd) {
-                // Aqui você poderia filtrar os dados pelo período selecionado
-                // e regenerar os gráficos, mas para simplicidade vamos apenas
-                // recarregar os gráficos existentes
-                inicializarGraficos();
-            } else {
-                alert('Por favor, selecione o período do relatório.');
-            }
-        });
+        if (btnGenerateReport) {
+            btnGenerateReport.addEventListener('click', () => {
+                const dateStart = document.getElementById('date-start').value;
+                const dateEnd = document.getElementById('date-end').value;
+                
+                if (dateStart && dateEnd) {
+                    // Aqui você poderia filtrar os dados pelo período selecionado
+                    // e regenerar os gráficos, mas para simplicidade vamos apenas
+                    // recarregar os gráficos existentes
+                    inicializarGraficos();
+                } else {
+                    alert('Por favor, selecione o período do relatório.');
+                }
+            });
+        }
         
         // Configurações
         const configForm = document.getElementById('config-form');
-        configForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            // Salvar configurações
-            if (dadosContato && dadosContato.config) {
-                dadosContato.config.mensagem_padrao_whatsapp = document.getElementById('config-mensagem-padrao').value;
-                dadosContato.config.tempo_resposta_maximo = document.getElementById('config-tempo-resposta').value;
-                dadosContato.config.notificacoes_email = document.getElementById('config-notificacoes-email').checked;
-                dadosContato.config.notificacoes_sistema = document.getElementById('config-notificacoes-sistema').checked;
+        if (configForm) {
+            configForm.addEventListener('submit', (e) => {
+                e.preventDefault();
                 
-                // Em um sistema real, você enviaria esses dados para o servidor
-                // Aqui apenas simulamos o salvamento
-                alert('Configurações salvas com sucesso!');
-            }
-        });
+                // Salvar configurações
+                if (dadosContato && dadosContato.config) {
+                    const configMensagemPadrao = document.getElementById('config-mensagem-padrao');
+                    const configTempoResposta = document.getElementById('config-tempo-resposta');
+                    const configNotificacoesEmail = document.getElementById('config-notificacoes-email');
+                    const configNotificacoesSistema = document.getElementById('config-notificacoes-sistema');
+                    
+                    if (configMensagemPadrao) dadosContato.config.mensagem_padrao_whatsapp = configMensagemPadrao.value;
+                    if (configTempoResposta) dadosContato.config.tempo_resposta_maximo = configTempoResposta.value;
+                    if (configNotificacoesEmail) dadosContato.config.notificacoes_email = configNotificacoesEmail.checked;
+                    if (configNotificacoesSistema) dadosContato.config.notificacoes_sistema = configNotificacoesSistema.checked;
+                    
+                    // Em um sistema real, você enviaria esses dados para o servidor
+                    // Aqui apenas simulamos o salvamento
+                    alert('Configurações salvas com sucesso!');
+                }
+            });
+        }
     }
 
     // Abrir modal de contato com detalhes
@@ -844,6 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!contato) return;
         
         const modalContent = document.getElementById('modal-contato-content');
+        if (!modalContent) return;
         
         let html = `
             <h2>Detalhes do Contato</h2>
@@ -876,7 +953,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Exibir modal
-        document.getElementById('modal-contato').style.display = 'block';
+        const modalContato = document.getElementById('modal-contato');
+        if (modalContato) {
+            modalContato.style.display = 'block';
+        }
     }
 
     // Abrir modal para atualizar status
@@ -887,12 +967,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!contato) return;
         
         // Preencher o form
-        document.getElementById('status-contato-id').value = id;
-        document.getElementById('status-select').value = contato.status;
-        document.getElementById('status-observacao').value = '';
+        const statusContatoId = document.getElementById('status-contato-id');
+        const statusSelect = document.getElementById('status-select');
+        const statusObservacao = document.getElementById('status-observacao');
+        
+        if (statusContatoId) statusContatoId.value = id;
+        if (statusSelect) statusSelect.value = contato.status;
+        if (statusObservacao) statusObservacao.value = '';
         
         // Exibir modal
-        document.getElementById('modal-status').style.display = 'block';
+        const modalStatus = document.getElementById('modal-status');
+        if (modalStatus) {
+            modalStatus.style.display = 'block';
+        }
     }
 
     // Atualizar status de um contato
@@ -906,7 +993,7 @@ document.addEventListener('DOMContentLoaded', function() {
         contato.status = novoStatus;
         
         // Em um sistema real, você enviaria estes dados para o servidor
-        // Aqui apenas atualizamos os dados locais
+        // usando a função atualizarDados que está definida no escopo global
         
         // Gerar mensagem personalizada para WhatsApp baseada no novo status
         let mensagemPersonalizada = '';
@@ -937,7 +1024,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Adicionar observação se tiver
         if (observacao) {
             // Em um sistema real, você armazenaria histórico de observações
+            if (!contato.observacoes) {
+                contato.observacoes = [];
+            }
+            
+            contato.observacoes.push({
+                data: new Date().toISOString(),
+                status: novoStatus,
+                texto: observacao
+            });
+            
             console.log(`Observação para ${id}: ${observacao}`);
+        }
+        
+        // Atualizar dados no servidor
+        try {
+            window.atualizarDados(id, novoStatus, observacao);
+        } catch (error) {
+            console.log('Erro ao chamar atualizarDados, atualizando apenas interface local:', error);
         }
         
         // Atualizar a interface
@@ -951,43 +1055,64 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatarData(dataISO) {
         if (!dataISO) return '';
         
-        const data = new Date(dataISO);
-        const dia = data.getDate().toString().padStart(2, '0');
-        const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-        const ano = data.getFullYear();
-        const hora = data.getHours().toString().padStart(2, '0');
-        const minuto = data.getMinutes().toString().padStart(2, '0');
-        
-        return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+        try {
+            const data = new Date(dataISO);
+            if (isNaN(data.getTime())) return dataISO; // Retorna o original se não for uma data válida
+            
+            const dia = data.getDate().toString().padStart(2, '0');
+            const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+            const ano = data.getFullYear();
+            const hora = data.getHours().toString().padStart(2, '0');
+            const minuto = data.getMinutes().toString().padStart(2, '0');
+            
+            return `${dia}/${mes}/${ano} às ${hora}:${minuto}`;
+        } catch (error) {
+            console.error('Erro ao formatar data:', error);
+            return dataISO; // Retorna o original em caso de erro
+        }
     }
     
     function formatarDataCurta(data) {
-        const dia = data.getDate().toString().padStart(2, '0');
-        const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-        
-        return `${dia}/${mes}`;
+        try {
+            const dia = data.getDate().toString().padStart(2, '0');
+            const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+            
+            return `${dia}/${mes}`;
+        } catch (error) {
+            console.error('Erro ao formatar data curta:', error);
+            return '';
+        }
     }
     
     function formatarTelefone(telefone) {
-        // Remover o código do país para exibição
-        if (telefone.startsWith('55')) {
-            telefone = telefone.substring(2);
-        }
+        if (!telefone) return '';
         
-        // Formatar como (XX) XXXXX-XXXX para celulares brasileiros
-        if (telefone.length === 11) {
-            return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 7)}-${telefone.substring(7)}`;
-        } 
-        // Formatar como (XX) XXXX-XXXX para telefones fixos
-        else if (telefone.length === 10) {
-            return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 6)}-${telefone.substring(6)}`;
+        try {
+            // Remover o código do país para exibição
+            if (telefone.startsWith('55')) {
+                telefone = telefone.substring(2);
+            }
+            
+            // Formatar como (XX) XXXXX-XXXX para celulares brasileiros
+            if (telefone.length === 11) {
+                return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 7)}-${telefone.substring(7)}`;
+            } 
+            // Formatar como (XX) XXXX-XXXX para telefones fixos
+            else if (telefone.length === 10) {
+                return `(${telefone.substring(0, 2)}) ${telefone.substring(2, 6)}-${telefone.substring(6)}`;
+            }
+            
+            // Retornar o formato original se não reconhecer o padrão
+            return telefone;
+        } catch (error) {
+            console.error('Erro ao formatar telefone:', error);
+            return telefone;
         }
-        
-        // Retornar o formato original se não reconhecer o padrão
-        return telefone;
     }
     
     function traduzirStatus(status) {
+        if (!status) return '';
+        
         const statusMap = {
             'pendente': 'Pendente',
             'em_atendimento': 'Em Atendimento',
@@ -999,6 +1124,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function traduzirOrigem(origem) {
+        if (!origem) return '';
+        
         const origemMap = {
             'formulario_site': 'Formulário do Site',
             'telefone': 'Telefone',
@@ -1011,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Função para atualizar os contatos via PHP
+// Função global para atualizar os contatos via PHP
 function atualizarDados(id, novoStatus, observacao) {
     // Em um sistema real, isto enviaria uma requisição AJAX para o servidor
     // para atualizar o arquivo JSON
@@ -1027,14 +1154,18 @@ function atualizarDados(id, novoStatus, observacao) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            console.log('Status atualizado com sucesso no servidor');
             // Recarregar os dados atualizados
-            carregarDadosContato();
+            if (typeof carregarDadosContato === 'function') {
+                carregarDadosContato();
+            }
         } else {
+            console.error('Erro ao atualizar o status:', data.message);
             alert('Erro ao atualizar o status: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
+        console.error('Erro de comunicação:', error);
         alert('Erro de comunicação ao atualizar o status.');
     });
 }

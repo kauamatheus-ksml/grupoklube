@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="assents/css/admin-style.css">
 </head>
 <body>
+    <!-- Overlay para a sidebar em mobile -->
     <div class="sidebar-overlay"></div>
+    
     <!-- Header -->
     <header id="admin-header">
         <div class="container admin-header-container">
@@ -300,7 +302,74 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
+    <!-- JavaScript de inicialização rápida para garantir que a sidebar funcione -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicialização básica da sidebar para mobile
+            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+            const sidebar = document.querySelector('.admin-sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            
+            if (mobileMenuBtn && sidebar && overlay) {
+                // Toggle sidebar ao clicar no botão mobile
+                mobileMenuBtn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                    
+                    // Impedir scroll no body quando sidebar estiver aberta
+                    if (sidebar.classList.contains('active')) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = '';
+                    }
+                });
+                
+                // Fechar sidebar ao clicar no overlay
+                overlay.addEventListener('click', function() {
+                    mobileMenuBtn.classList.remove('active');
+                    sidebar.classList.remove('active');
+                    this.classList.remove('active');
+                    document.body.style.overflow = '';
+                });
+                
+                // Fechar sidebar ao clicar em um link
+                const sidebarLinks = sidebar.querySelectorAll('a');
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth <= 768) {
+                            mobileMenuBtn.classList.remove('active');
+                            sidebar.classList.remove('active');
+                            overlay.classList.remove('active');
+                            document.body.style.overflow = '';
+                        }
+                        
+                        // Navegação básica entre seções
+                        const targetSection = this.getAttribute('data-section');
+                        if (targetSection) {
+                            // Atualizar navegação
+                            document.querySelectorAll('.sidebar-nav li').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            this.parentElement.classList.add('active');
+                            
+                            // Mostrar seção correspondente
+                            document.querySelectorAll('.content-section').forEach(section => {
+                                section.classList.remove('active');
+                            });
+                            
+                            const targetElement = document.getElementById(targetSection);
+                            if (targetElement) {
+                                targetElement.classList.add('active');
+                            }
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+
+    <!-- JavaScript principal -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="assents/js/admin.js"></script>
 </body>
