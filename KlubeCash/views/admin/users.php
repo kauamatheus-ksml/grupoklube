@@ -1,11 +1,4 @@
 <?php
-// Adicione no início do arquivo para ver os erros
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// Verifique como o ID está sendo recebido
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-error_log("API users.php - ID recebido: " . $id);
 //views/admin/users.php
 // Definir o menu ativo na sidebar
 $activeMenu = 'usuarios';
@@ -133,6 +126,13 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             color: #F44336;
             border: 1px solid #F44336;
         }
+        
+        .alert-success {
+            background-color: #E8F5E9;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+        }
+        
         /* Barra de busca e ações */
         .actions-bar {
             display: flex;
@@ -515,6 +515,12 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             background-color: #E0E0E0;
         }
         
+        .form-text {
+            font-size: 12px;
+            color: var(--medium-gray);
+            margin-top: 5px;
+        }
+        
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content {
@@ -556,15 +562,12 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             <!-- Cabeçalho da Página -->
             <div class="page-header">
                 <h1>Usuários</h1>
-                <button class="btn btn-primary" onclick="showUserModal()">Adicionar</button>
-            </div>
-            <div class="page-header">
-                <h1>Usuários</h1>
-                <button class="btn btn-primary" onclick="showUserModal()">Adicionar</button>
+                <button class="btn btn-primary" onclick="showUserModal()">Adicionar Usuário</button>
             </div>
 
-            <!-- Adicione este elemento -->
-            <div id="errorMessage" class="alert-container"></div>
+            <!-- Container de mensagens -->
+            <div id="messageContainer" class="alert-container"></div>
+            
             <?php if ($hasError): ?>
                 <div class="alert alert-danger">
                     <?php echo htmlspecialchars($errorMessage); ?>
@@ -574,14 +577,30 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             <!-- Barra de Busca e Filtros -->
             <div class="actions-bar">
                 <form method="GET" action="" class="search-bar">
-                    <input type="text" name="search" placeholder="Buscar..." value="<?php echo htmlspecialchars($search); ?>">
-                    <div class="search-icon">
+                    <input type="text" name="search" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
+                    <button type="submit" class="search-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                    </div>
+                    </button>
                 </form>
+                
+                <div class="filter-controls">
+                    <select name="status" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;" onchange="this.form.submit()">
+                        <option value="">Todos os status</option>
+                        <option value="ativo" <?php echo $status === 'ativo' ? 'selected' : ''; ?>>Ativo</option>
+                        <option value="inativo" <?php echo $status === 'inativo' ? 'selected' : ''; ?>>Inativo</option>
+                        <option value="bloqueado" <?php echo $status === 'bloqueado' ? 'selected' : ''; ?>>Bloqueado</option>
+                    </select>
+                    
+                    <select name="type" class="form-select" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                        <option value="">Todos os tipos</option>
+                        <option value="cliente" <?php echo $type === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
+                        <option value="admin" <?php echo $type === 'admin' ? 'selected' : ''; ?>>Administrador</option>
+                        <option value="loja" <?php echo $type === 'loja' ? 'selected' : ''; ?>>Loja</option>
+                    </select>
+                </div>
             </div>
             
             <!-- Card Principal -->
@@ -599,6 +618,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                                 </th>
                                 <th>Nome</th>
                                 <th>E-mail</th>
+                                <th>Tipo</th>
                                 <th>Cadastro</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -607,7 +627,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center;">Nenhum usuário encontrado</td>
+                                    <td colspan="7" style="text-align: center;">Nenhum usuário encontrado</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($users as $user): ?>
@@ -620,6 +640,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                                         </td>
                                         <td><?php echo htmlspecialchars($user['nome']); ?></td>
                                         <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                        <td><?php echo htmlspecialchars(ucfirst($user['tipo'])); ?></td>
                                         <td><?php echo date('d/m/Y', strtotime($user['data_criacao'])); ?></td>
                                         <td>
                                             <?php 
@@ -706,7 +727,10 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             <div class="modal-header">
                 <h3 class="modal-title" id="userModalTitle">Adicionar Usuário</h3>
                 <div class="modal-close" onclick="hideUserModal()">
-                    <!-- Ícone de fechar -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
                 </div>
             </div>
             
@@ -719,7 +743,39 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                     <input type="text" class="form-control" id="userName" name="nome" required>
                 </div>
                 
-                <!-- Outros campos... -->
+                <div class="form-group">
+                    <label class="form-label" for="userEmail">E-mail</label>
+                    <input type="email" class="form-control" id="userEmail" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="userPhone">Telefone</label>
+                    <input type="text" class="form-control" id="userPhone" name="telefone">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="userType">Tipo</label>
+                    <select class="form-select" id="userType" name="tipo">
+                        <option value="cliente">Cliente</option>
+                        <option value="admin">Administrador</option>
+                        <option value="loja">Loja</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="userStatus">Status</label>
+                    <select class="form-select" id="userStatus" name="status">
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="userPassword">Senha</label>
+                    <input type="password" class="form-control" id="userPassword" name="senha" required>
+                    <small id="passwordHelp" class="form-text">Mínimo de 8 caracteres</small>
+                </div>
                 
                 <div class="form-footer">
                     <button type="button" class="btn btn-secondary" onclick="hideUserModal()">Cancelar</button>
@@ -732,6 +788,24 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
     <script>
         // Variáveis globais
         let currentUserId = null;
+
+        // Função para exibir mensagens
+        function showMessage(message, type = 'success') {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = `
+                <div class="alert alert-${type}">
+                    ${message}
+                </div>
+            `;
+            
+            // Rolar para a mensagem
+            messageContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            // Remover a mensagem após 5 segundos
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
 
         // Função para mostrar modal de adicionar usuário
         function showUserModal() {
@@ -750,41 +824,19 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
         function hideUserModal() {
             document.getElementById('userModal').classList.remove('show');
         }
-        // Certifique-se de que a URL está correta
-        fetch(`/api/users.php?id=${userId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("Dados recebidos:", data);
-                if (data.status) {
-                    // Preencha o formulário com os dados
-                    document.getElementById('edit-user-id').value = data.data.id;
-                    document.getElementById('edit-user-name').value = data.data.nome;
-                    // Mais campos...
-                    $('#editUserModal').modal('show');
-                } else {
-                    alert(data.message || "Erro ao carregar dados do usuário");
-                }
-            })
-            .catch(error => {
-                console.error("Erro na requisição:", error);
-                alert("Erro ao conectar com o servidor. Verifique o console para mais detalhes.");
-            });
+
         // Função para editar usuário
         function editUser(userId) {
-            console.log("Editando usuário ID:", userId);
-            let errorElement = document.getElementById('errorMessage');
-            if (!errorElement) {
-                errorElement = document.createElement('div');
-                errorElement.id = 'errorMessage';
-                document.querySelector('.page-header').after(errorElement);
-            }
+            // Armazenar ID do usuário atual
+            currentUserId = userId;
             
+            // Mostrar carregamento
+            document.getElementById('userModalTitle').textContent = 'Carregando...';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = userId;
+            document.getElementById('userModal').classList.add('show');
             
+            // Fazer requisição AJAX para obter dados do usuário
             fetch('../../controllers/AdminController.php', {
                 method: 'POST',
                 headers: {
@@ -793,26 +845,14 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                 body: 'action=getUserDetails&user_id=' + userId
             })
             .then(response => {
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    return response.text().then(text => {
-                        throw new Error(`Resposta não é JSON: ${text.substring(0, 100)}...`);
-                    });
+                if (!response.ok) {
+                    throw new Error('Erro na requisição: ' + response.status);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log("Dados recebidos:", data);
-                
-                if (data.status) {
-                    // Verificar se os dados do usuário estão na estrutura correta
-                    const userData = data.data && data.data.usuario ? data.data.usuario : null;
-                    
-                    if (!userData) {
-                        console.error('Estrutura de dados inválida:', data);
-                        alert('Erro: Dados do usuário não encontrados na resposta');
-                        return;
-                    }
+                if (data.status && data.data && data.data.usuario) {
+                    const userData = data.data.usuario;
                     
                     // Preencher o formulário
                     document.getElementById('userModalTitle').textContent = 'Editar Usuário';
@@ -820,57 +860,55 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                     document.getElementById('userName').value = userData.nome;
                     document.getElementById('userEmail').value = userData.email;
                     
-                    // Campos opcionais - verificar se existem
-                    if (document.getElementById('userPhone')) {
-                        document.getElementById('userPhone').value = userData.telefone || '';
+                    // Campos opcionais
+                    if (userData.telefone) {
+                        document.getElementById('userPhone').value = userData.telefone;
                     }
                     
-                    document.getElementById('userStatus').value = userData.status || 'ativo';
+                    document.getElementById('userType').value = userData.tipo;
+                    document.getElementById('userStatus').value = userData.status;
                     
-                    // Campo de senha opcional na edição
-                    const passwordField = document.getElementById('userPassword');
-                    if (passwordField) {
-                        passwordField.required = false;
-                        passwordField.value = '';
-                        document.getElementById('passwordHelp').textContent = 'Deixe em branco para manter a senha atual';
-                    }
-                    
-                    // Mostrar modal
-                    document.getElementById('userModal').classList.add('show');
+                    // Senha opcional na edição
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('userPassword').value = '';
+                    document.getElementById('passwordHelp').textContent = 'Deixe em branco para manter a senha atual';
                 } else {
-                    alert('Erro: ' + (data.message || 'Erro desconhecido'));
+                    hideUserModal();
+                    showMessage(data.message || 'Erro ao carregar dados do usuário', 'danger');
                 }
             })
             .catch(error => {
-                console.error('Erro na requisição:', error);
-                alert('Erro ao processar a solicitação: ' + error.message);
+                console.error('Erro:', error);
+                hideUserModal();
+                showMessage('Erro ao carregar dados do usuário: ' + error.message, 'danger');
+            });
         }
 
         // Função para excluir usuário
         function deleteUser(userId, userName) {
-            if (confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário "${userName}"?`)) {
-                // Criar requisição para o endpoint correto
-                const formData = new FormData();
-                formData.append('action', 'updateUserStatus');  // Verifique se esta action existe ou use 'deleteUser'
-                formData.append('user_id', userId);
-                formData.append('status', 'inativo');  // Ou outro status para exclusão lógica
-                
+            if (confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) {
                 fetch('../../controllers/AdminController.php', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=update_user_status&user_id=' + userId + '&status=inativo'
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.status) {
-                        alert('Usuário excluído com sucesso!');
-                        location.reload();
+                        showMessage('Usuário excluído com sucesso!');
+                        // Recarregar a página após 1 segundo
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
                     } else {
-                        alert('Erro ao excluir usuário: ' + (data.message || 'Erro desconhecido'));
+                        showMessage(data.message || 'Erro ao excluir usuário', 'danger');
                     }
                 })
                 .catch(error => {
                     console.error('Erro:', error);
-                    alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
+                    showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
                 });
             }
         }
@@ -882,54 +920,96 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             // Obter dados do formulário
             const form = document.getElementById('userForm');
             const formData = new FormData(form);
+            
+            // Verificar se estamos editando ou criando
             const userId = formData.get('id');
+            const isEditing = userId !== '';
             
-            // Definir a URL e os parâmetros corretos
-            let url = userId ? '../../controllers/AdminController.php' : '../../controllers/AuthController.php';
-            let params = new FormData();
+            // Mostrar indicador de carregamento
+            const saveButton = form.querySelector('button[type="submit"]');
+            const originalButtonText = saveButton.textContent;
+            saveButton.textContent = 'Salvando...';
+            saveButton.disabled = true;
             
-            if (userId) {
-                // Editar usuário existente
-                params.append('action', 'updateUser');
-                params.append('user_id', userId);
-                params.append('nome', formData.get('nome'));
-                params.append('email', formData.get('email'));
-                params.append('telefone', formData.get('telefone') || '');
-                params.append('status', formData.get('status'));
+            // Converter FormData para URLSearchParams para melhor compatibilidade
+            const data = new URLSearchParams();
+            
+            if (isEditing) {
+                // Para edição, usamos AdminController.php com action=update_user
+                data.append('action', 'update_user');
+                data.append('user_id', userId);
+                data.append('nome', formData.get('nome'));
+                data.append('email', formData.get('email'));
+                data.append('telefone', formData.get('telefone') || '');
+                data.append('tipo', formData.get('tipo'));
+                data.append('status', formData.get('status'));
                 
-                // Senha opcional na edição
-                if (formData.get('senha')) {
-                    params.append('senha', formData.get('senha'));
+                // Senha opcional
+                if (formData.get('senha') && formData.get('senha').trim() !== '') {
+                    data.append('senha', formData.get('senha'));
                 }
+                
+                var url = '../../controllers/AdminController.php';
             } else {
-                // Adicionar novo usuário
-                params.append('action', 'register');
-                params.append('nome', formData.get('nome'));
-                params.append('email', formData.get('email'));
-                params.append('telefone', formData.get('telefone') || '');
-                params.append('senha', formData.get('senha'));
-                // Tipo padrão: cliente
-                params.append('tipo', 'cliente');
+                // Para criação, usamos AuthController.php
+                data.append('action', 'register');
+                data.append('nome', formData.get('nome'));
+                data.append('email', formData.get('email'));
+                data.append('telefone', formData.get('telefone') || '');
+                data.append('senha', formData.get('senha'));
+                data.append('tipo', formData.get('tipo'));
+                
+                var url = '../../controllers/AuthController.php';
             }
+            
+            // Adicionar logs para debug
+            console.log('Enviando dados para:', url);
+            console.log('Dados sendo enviados:', Object.fromEntries(data));
             
             // Enviar requisição
             fetch(url, {
                 method: 'POST',
-                body: params
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: data
             })
-            .then(response => response.json())
+            .then(response => {
+                return response.text(); // Obter a resposta como texto primeiro para debug
+            })
+            .then(text => {
+                console.log('Resposta completa do servidor:', text);
+                
+                let data;
+                try {
+                    // Tentar converter texto para JSON
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error("Falha ao analisar JSON:", text);
+                    throw new Error("Resposta do servidor não é JSON válido");
+                }
+                return data;
+            })
             .then(data => {
                 if (data.status) {
-                    alert(userId ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
                     hideUserModal();
-                    location.reload();
+                    showMessage(isEditing ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
+                    // Recarregar a página após 1 segundo
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
-                    alert('Erro: ' + (data.message || 'Erro desconhecido'));
+                    showMessage(data.message || 'Erro ao processar solicitação', 'danger');
                 }
             })
             .catch(error => {
                 console.error('Erro:', error);
-                alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
+                showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
+            })
+            .finally(() => {
+                // Restaurar botão de salvar
+                saveButton.textContent = originalButtonText;
+                saveButton.disabled = false;
             });
         }
 

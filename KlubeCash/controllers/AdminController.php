@@ -1,39 +1,5 @@
 <?php
-// Impede que erros PHP sejam exibidos diretamente na saída
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
 
-// Manipulador de erros personalizado que converte erros em JSON
-function json_error_handler($errno, $errstr, $errfile, $errline) {
-    $error = [
-        'status' => false,
-        'message' => 'Erro interno do servidor',
-        'debug' => "$errstr em $errfile:$errline"
-    ];
-    
-    header('Content-Type: application/json');
-    echo json_encode($error);
-    exit;
-}
-
-// Registrar o manipulador de erros
-set_error_handler('json_error_handler');
-
-// Manipulador de exceções não capturadas
-function exception_handler($exception) {
-    $error = [
-        'status' => false,
-        'message' => 'Erro interno do servidor',
-        'debug' => $exception->getMessage() . ' em ' . $exception->getFile() . ':' . $exception->getLine()
-    ];
-    
-    header('Content-Type: application/json');
-    echo json_encode($error);
-    exit;
-}
-
-// Registrar o manipulador de exceções
-set_exception_handler('exception_handler');
 // controllers/AdminController.php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -455,69 +421,83 @@ class AdminController {
      * @param string $status Novo status (ativo, inativo, bloqueado)
      * @return array Resultado da operação
      */
-    public static function updateUserStatus($userId, $status) {
+    public static function updateUser($userId, $data) {
         try {
             // Verificar se é um administrador
             if (!self::validateAdmin()) {
-                // Retornar JSON em vez de redirecionar, para requisições AJAX
-                echo json_encode(['status' => false, 'message' => 'Acesso restrito a administradores.']);
-                exit;
-            }
-            
-            // Validar status
-            $validStatus = [USER_ACTIVE, USER_INACTIVE, USER_BLOCKED];
-            if (!in_array($status, $validStatus)) {
-                return ['status' => false, 'message' => 'Status inválido.'];
+                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
             }
             
             $db = Database::getConnection();
             
             // Verificar se o usuário existe
-            $checkStmt = $db->prepare("SELECT id, nome, email FROM usuarios WHERE id = :user_id");
+            $checkStmt = $db->prepare("SELECT id FROM usuarios WHERE id = :user_id");
             $checkStmt->bindParam(':user_id', $userId);
             $checkStmt->execute();
-            $user = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$user) {
+            if ($checkStmt->rowCount() == 0) {
                 return ['status' => false, 'message' => 'Usuário não encontrado.'];
             }
             
-            // Atualizar status
-            $updateStmt = $db->prepare("UPDATE usuarios SET status = :status WHERE id = :user_id");
-            $updateStmt->bindParam(':status', $status);
-            $updateStmt->bindParam(':user_id', $userId);
-            $updateStmt->execute();
+            // Criar array de campos a serem atualizados
+            $updateFields = [];
+            $params = [':user_id' => $userId];
             
-            // Notificar usuário por email
-            $statusLabels = [
-                USER_ACTIVE => 'ativada',
-                USER_INACTIVE => 'desativada',
-                USER_BLOCKED => 'bloqueada'
-            ];
-            
-            $subject = 'Atualização de status da sua conta - Klube Cash';
-            $message = "
-                <h3>Olá, {$user['nome']}!</h3>
-                <p>Informamos que sua conta no Klube Cash foi <strong>{$statusLabels[$status]}</strong>.</p>
-            ";
-            
-            if ($status == USER_ACTIVE) {
-                $message .= "<p>Você já pode fazer login e aproveitar todos os benefícios do Klube Cash.</p>";
-            } else if ($status == USER_INACTIVE) {
-                $message .= "<p>Sua conta foi desativada temporariamente. Para mais informações, entre em contato com nosso suporte.</p>";
-            } else if ($status == USER_BLOCKED) {
-                $message .= "<p>Sua conta foi bloqueada. Para mais informações, entre em contato com nosso suporte.</p>";
+            // Nome
+            if (isset($data['nome']) && !empty($data['nome'])) {
+                $updateFields[] = "nome = :nome";
+                $params[':nome'] = $data['nome'];
             }
             
-            $message .= "<p>Atenciosamente,<br>Equipe Klube Cash</p>";
+            // Email
+            if (isset($data['email']) && !empty($data['email'])) {
+                $updateFields[] = "email = :email";
+                $params[':email'] = $data['email'];
+            }
             
-            Email::send($user['email'], $subject, $message, $user['nome']);
+            // Tipo
+            if (isset($data['tipo']) && !empty($data['tipo'])) {
+                $updateFields[] = "tipo = :tipo";
+                $params[':tipo'] = $data['tipo'];
+            }
             
-            return ['status' => true, 'message' => 'Status do usuário atualizado com sucesso.'];
+            // Status
+            if (isset($data['status']) && !empty($data['status'])) {
+                $updateFields[] = "status = :status";
+                $params[':status'] = $data['status'];
+            }
+            
+            // Senha (opcional)
+            if (isset($data['senha']) && !empty($data['senha'])) {
+                $senha_hash = password_hash($data['senha'], PASSWORD_DEFAULT);
+                $updateFields[] = "senha_hash = :senha_hash";
+                $params[':senha_hash'] = $senha_hash;
+            }
+            
+            // Se não houver campos para atualizar
+            if (empty($updateFields)) {
+                return ['status' => false, 'message' => 'Nenhum dado para atualizar.'];
+            }
+            
+            // Construir e executar a query de atualização
+            $query = "UPDATE usuarios SET " . implode(', ', $updateFields) . " WHERE id = :user_id";
+            $stmt = $db->prepare($query);
+            
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            
+            $success = $stmt->execute();
+            
+            if ($success) {
+                return ['status' => true, 'message' => 'Usuário atualizado com sucesso.'];
+            } else {
+                return ['status' => false, 'message' => 'Falha ao atualizar usuário no banco de dados.'];
+            }
             
         } catch (PDOException $e) {
-            error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
-            return ['status' => false, 'message' => 'Erro ao carregar detalhes do usuário. Tente novamente.'];
+            error_log('Erro ao atualizar usuário: ' . $e->getMessage());
+            return ['status' => false, 'message' => 'Erro ao atualizar usuário: ' . $e->getMessage()];
         }
     }
     
@@ -2111,7 +2091,11 @@ if (basename($_SERVER['PHP_SELF']) === 'AdminController.php') {
             $result = AdminController::updateUserStatus($userId, $status);
             echo json_encode($result);
             break;
-            
+        case 'update_user':
+            $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+            $result = AdminController::updateUser($userId, $_POST);
+            echo json_encode($result);
+            break;    
         case 'stores':
             $filters = $_POST['filters'] ?? [];
             $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
