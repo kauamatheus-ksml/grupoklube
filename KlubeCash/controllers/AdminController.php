@@ -1,4 +1,39 @@
 <?php
+// Impede que erros PHP sejam exibidos diretamente na saída
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Manipulador de erros personalizado que converte erros em JSON
+function json_error_handler($errno, $errstr, $errfile, $errline) {
+    $error = [
+        'status' => false,
+        'message' => 'Erro interno do servidor',
+        'debug' => "$errstr em $errfile:$errline"
+    ];
+    
+    header('Content-Type: application/json');
+    echo json_encode($error);
+    exit;
+}
+
+// Registrar o manipulador de erros
+set_error_handler('json_error_handler');
+
+// Manipulador de exceções não capturadas
+function exception_handler($exception) {
+    $error = [
+        'status' => false,
+        'message' => 'Erro interno do servidor',
+        'debug' => $exception->getMessage() . ' em ' . $exception->getFile() . ':' . $exception->getLine()
+    ];
+    
+    header('Content-Type: application/json');
+    echo json_encode($error);
+    exit;
+}
+
+// Registrar o manipulador de exceções
+set_exception_handler('exception_handler');
 // controllers/AdminController.php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -281,7 +316,44 @@ class AdminController {
      * @return array Dados do usuário
      */
     
-    public static function getUserDetails($userId) {
+     public static function getUserDetails($userId) {
+        try {
+            // Log para debug
+            error_log("Obtendo detalhes do usuário ID: $userId");
+            
+            // Verificar se é um administrador
+            if (!self::validateAdmin()) {
+                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
+            }
+            
+            $db = Database::getConnection();
+            
+            // Obter dados do usuário
+            $stmt = $db->prepare("
+                SELECT id, nome, email, tipo, status, data_criacao, ultimo_login
+                FROM usuarios
+                WHERE id = :user_id
+            ");
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$user) {
+                return ['status' => false, 'message' => 'Usuário não encontrado.'];
+            }
+            
+            // Garantir que estamos retornando um array associativo
+            return [
+                'status' => true,
+                'data' => [
+                    'usuario' => $user
+                ]
+            ];
+            
+        } catch (PDOException $e) {
+            error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
+            return ['status' => false, 'message' => 'Erro ao carregar detalhes do usuário. Tente novamente.'];
+        }
         try {
             // Verificar se é um administrador
             if (!self::validateAdmin()) {
