@@ -108,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Klube Cash</title>
     <link rel="stylesheet" href="../../assets/css/auth.css">
+    <link rel="shortcut icon" type="image/jpg" href="../../assets/images/icons/KlubeCashLOGO.ico"/>
     <link rel="stylesheet" href="../../assets/css/responsive.css">
     <style>
         /* Estilos específicos para a página de registro */

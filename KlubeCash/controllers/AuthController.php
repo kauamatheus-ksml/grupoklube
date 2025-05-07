@@ -81,7 +81,7 @@ class AuthController {
      * @param string $senha Senha do usuário
      * @return array Resultado da operação com status e mensagem
      */
-    public static function register($nome, $email, $telefone, $senha) {
+    public static function register($nome, $email, $telefone, $senha, $tipo = null) {
         try {
             // Validar dados
             $errors = [];
@@ -120,14 +120,16 @@ class AuthController {
             // Hash da senha
             $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
             
+            // Definir tipo de usuário (cliente é o padrão, mas admin pode alterar)
+            $tipoUsuario = $tipo ?? USER_TYPE_CLIENT;
+            
             // Inserir novo usuário
             $stmt = $db->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo, status, data_criacao) 
                                   VALUES (:nome, :email, :senha_hash, :tipo, :status, NOW())");
             $stmt->bindParam(':nome', $nome);
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':senha_hash', $senha_hash);
-            $tipo = USER_TYPE_CLIENT;
-            $stmt->bindParam(':tipo', $tipo);
+            $stmt->bindParam(':tipo', $tipoUsuario);
             $status = USER_ACTIVE;
             $stmt->bindParam(':status', $status);
             

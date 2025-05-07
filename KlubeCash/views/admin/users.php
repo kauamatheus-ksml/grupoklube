@@ -959,6 +959,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                 data.append('telefone', formData.get('telefone') || '');
                 data.append('senha', formData.get('senha'));
                 data.append('tipo', formData.get('tipo'));
+                data.append('ajax', '1'); // Indicar que é uma chamada AJAX
                 
                 var url = '../../controllers/AuthController.php';
             }
@@ -972,6 +973,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest' // Adicionar cabeçalho AJAX
                 },
                 body: data
             })

@@ -151,6 +151,7 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
     <title><?php echo $validToken ? 'Redefinir Senha' : 'Recuperar Senha'; ?> - Klube Cash</title>
     <link rel="stylesheet" href="../../assets/css/auth.css">
     <link rel="stylesheet" href="../../assets/css/responsive.css">
+    <link rel="shortcut icon" type="image/jpg" href="../../assets/images/icons/KlubeCashLOGO.ico"/>
     <style>
         /* Estilos específicos para a página de recuperação de senha */
         :root {
