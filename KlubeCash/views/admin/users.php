@@ -28,16 +28,18 @@ $type = isset($_GET['type']) ? $_GET['type'] : '';
 // Preparar filtros
 $filters = [];
 if (!empty($search)) {
-    $filters['busca'] = $search;
+    $filters['busca'] = trim($search);
 }
 if (!empty($status)) {
     $filters['status'] = $status;
 }
 if (!empty($type)) {
-    // Aqui está a correção principal - mapear 'type' para 'tipo' que é o esperado pelo controller
-    $filters['tipo'] = $type;
+    $filters['tipo'] = $type; // 'type' é mapeado para 'tipo' para o controller
 }
 
+// Verificar valores dos filtros para debug
+error_log('Filtros preparados: ' . print_r($filters, true));
+error_log('Página: ' . $page);
 try {
     // Obter dados dos usuários
     $result = AdminController::manageUsers($filters, $page);
@@ -601,9 +603,9 @@ try {
             
             <!-- Barra de Busca e Filtros -->
             <div class="actions-bar">
-                <form method="GET" action="" class="filters-form">
+                <form method="GET" action="" class="filters-form" id="searchForm">
                     <div class="search-bar">
-                        <input type="text" name="search" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
+                        <input type="text" name="search" id="searchInput" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
                         <button type="submit" class="search-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
@@ -613,20 +615,25 @@ try {
                     </div>
                     
                     <div class="filter-controls">
-                        <select name="status" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;" onchange="this.form.submit()">
+                        <select name="status" id="statusFilter" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;">
                             <option value="">Todos os status</option>
                             <option value="ativo" <?php echo $status === 'ativo' ? 'selected' : ''; ?>>Ativo</option>
                             <option value="inativo" <?php echo $status === 'inativo' ? 'selected' : ''; ?>>Inativo</option>
                             <option value="bloqueado" <?php echo $status === 'bloqueado' ? 'selected' : ''; ?>>Bloqueado</option>
                         </select>
                         
-                        <select name="type" class="form-select" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                        <select name="type" id="typeFilter" class="form-select" style="width: auto; display: inline-block;">
                             <option value="">Todos os tipos</option>
                             <option value="cliente" <?php echo $type === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
                             <option value="admin" <?php echo $type === 'admin' ? 'selected' : ''; ?>>Administrador</option>
                             <option value="loja" <?php echo $type === 'loja' ? 'selected' : ''; ?>>Loja</option>
                         </select>
+                        
+                        <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Filtrar</button>
                     </div>
+                    
+                    <!-- Sempre começar pela primeira página quando filtrar -->
+                    <input type="hidden" name="page" value="1">
                 </form>
             </div>
             
@@ -1051,6 +1058,17 @@ try {
                 checkbox.checked = selectAll.checked;
             });
         }
+        // Adicionar comportamento para os filtros
+        document.addEventListener('DOMContentLoaded', function() {
+            // Submeter o formulário quando os filtros select forem alterados
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                document.getElementById('searchForm').submit();
+            });
+            
+            document.getElementById('typeFilter').addEventListener('change', function() {
+                document.getElementById('searchForm').submit();
+            });
+        });
     </script>
 </body>
 </html>
