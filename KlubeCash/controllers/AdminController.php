@@ -280,6 +280,7 @@ class AdminController {
      * @param int $userId ID do usuário
      * @return array Dados do usuário
      */
+    
     public static function getUserDetails($userId) {
         try {
             // Verificar se é um administrador
@@ -386,7 +387,9 @@ class AdminController {
         try {
             // Verificar se é um administrador
             if (!self::validateAdmin()) {
-                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
+                // Retornar JSON em vez de redirecionar, para requisições AJAX
+                echo json_encode(['status' => false, 'message' => 'Acesso restrito a administradores.']);
+                exit;
             }
             
             // Validar status
@@ -441,8 +444,8 @@ class AdminController {
             return ['status' => true, 'message' => 'Status do usuário atualizado com sucesso.'];
             
         } catch (PDOException $e) {
-            error_log('Erro ao atualizar status do usuário: ' . $e->getMessage());
-            return ['status' => false, 'message' => 'Erro ao atualizar status do usuário. Tente novamente.'];
+            error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
+            return ['status' => false, 'message' => 'Erro ao carregar detalhes do usuário. Tente novamente.'];
         }
     }
     
@@ -2021,12 +2024,15 @@ if (basename($_SERVER['PHP_SELF']) === 'AdminController.php') {
             echo json_encode($result);
             break;
             
-        case 'user_details':
+        
+        case 'getUserDetails':
+            // Garantir que a resposta seja JSON
+            header('Content-Type: application/json');
             $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
             $result = AdminController::getUserDetails($userId);
             echo json_encode($result);
-            break;
-            
+            exit; // Garantir que nada mais seja executado
+            break;   
         case 'update_user_status':
             $userId = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
             $status = $_POST['status'] ?? '';

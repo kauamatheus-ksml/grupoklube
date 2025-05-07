@@ -729,183 +729,187 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
     
     <script>
         // Variáveis globais
-let currentUserId = null;
+        let currentUserId = null;
 
-// Função para mostrar modal de adicionar usuário
-function showUserModal() {
-    document.getElementById('userModalTitle').textContent = 'Adicionar Usuário';
-    document.getElementById('userForm').reset();
-    document.getElementById('userId').value = '';
-    document.getElementById('passwordField').required = true;
-    document.getElementById('passwordHelp').textContent = 'Mínimo de 8 caracteres';
-    currentUserId = null;
-    
-    // Mostrar modal
-    document.getElementById('userModal').classList.add('show');
-}
-
-// Função para esconder modal
-function hideUserModal() {
-    document.getElementById('userModal').classList.remove('show');
-}
-
-// Função para editar usuário
-function editUser(userId) {
-    currentUserId = userId;
-    
-    // Correção: Usar o endpoint correto e o nome do parâmetro correto
-    fetch('../../controllers/AdminController.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'action=getUserDetails&user_id=' + userId
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status) {
-            // Verificar se os dados do usuário estão na estrutura correta
-            const userData = data.data.usuario;
-            
-            if (!userData) {
-                console.error('Estrutura de dados inválida:', data);
-                alert('Erro: Dados do usuário não encontrados na resposta');
-                return;
-            }
-            
-            // Preencher o formulário
-            document.getElementById('userModalTitle').textContent = 'Editar Usuário';
-            document.getElementById('userId').value = userData.id;
-            document.getElementById('userName').value = userData.nome;
-            document.getElementById('userEmail').value = userData.email;
-            
-            // Telefone pode não existir em todos os usuários
-            if (document.getElementById('userPhone') && userData.telefone) {
-                document.getElementById('userPhone').value = userData.telefone;
-            }
-            
-            document.getElementById('userStatus').value = userData.status;
-            if (document.getElementById('userType')) {
-                document.getElementById('userType').value = userData.tipo || 'cliente';
-            }
-            
-            // Senha não é obrigatória na edição
-            document.getElementById('passwordField').required = false;
-            document.getElementById('passwordField').value = '';
-            document.getElementById('passwordHelp').textContent = 'Deixe em branco para manter a senha atual';
+        // Função para mostrar modal de adicionar usuário
+        function showUserModal() {
+            document.getElementById('userModalTitle').textContent = 'Adicionar Usuário';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('userPassword').required = true;
+            document.getElementById('passwordHelp').textContent = 'Mínimo de 8 caracteres';
+            currentUserId = null;
             
             // Mostrar modal
             document.getElementById('userModal').classList.add('show');
-        } else {
-            console.error('Resposta do servidor:', data);
-            alert('Erro ao carregar dados do usuário: ' + (data.message || 'Erro desconhecido'));
         }
-    })
-    .catch(error => {
-        console.error('Erro na requisição:', error);
-        alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
-    });
-}
 
-// Função para excluir usuário - implementação correta para EXCLUIR do banco
-function deleteUser(userId, userName) {
-    if (confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário "${userName}"?`)) {
-        // Criar uma requisição direta para o backend
-        const formData = new FormData();
-        formData.append('action', 'deleteUser');
-        formData.append('user_id', userId);
-        
-        fetch('../../controllers/AdminController.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status) {
-                alert('Usuário excluído com sucesso!');
-                location.reload();
-            } else {
-                alert('Erro ao excluir usuário: ' + (data.message || 'Erro desconhecido'));
+        // Função para esconder modal
+        function hideUserModal() {
+            document.getElementById('userModal').classList.remove('show');
+        }
+
+        // Função para editar usuário
+        function editUser(userId) {
+            currentUserId = userId;
+            
+            // Exibir mensagem de depuração
+            console.log('Enviando requisição para obter detalhes do usuário ID:', userId);
+            
+            fetch('../../controllers/AdminController.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=getUserDetails&user_id=' + userId
+            })
+            .then(response => {
+                // Verificar e logar informações da resposta
+                console.log('Status da resposta:', response.status);
+                console.log('Tipo de conteúdo:', response.headers.get('content-type'));
+                
+                // Capturar o texto bruto para debugging
+                return response.text().then(text => {
+                    console.log('Resposta bruta:', text.substring(0, 200) + '...'); // Mostrar apenas os primeiros 200 caracteres
+                    
+                    try {
+                        // Tentar converter para JSON
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Falha ao parsear JSON:', e);
+                        throw new Error('A resposta não é um JSON válido');
+                    }
+                });
+            })
+            .then(data => {
+                console.log('Dados processados:', data);
+                
+                if (data.status) {
+                    const userData = data.data.usuario;
+                    
+                    // Preencher o formulário
+                    document.getElementById('userModalTitle').textContent = 'Editar Usuário';
+                    document.getElementById('userId').value = userData.id;
+                    document.getElementById('userName').value = userData.nome;
+                    document.getElementById('userEmail').value = userData.email;
+                    
+                    if (document.getElementById('userPhone')) {
+                        document.getElementById('userPhone').value = userData.telefone || '';
+                    }
+                    
+                    document.getElementById('userStatus').value = userData.status;
+                    
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('userPassword').value = '';
+                    document.getElementById('passwordHelp').textContent = 'Deixe em branco para manter a senha atual';
+                    
+                    document.getElementById('userModal').classList.add('show');
+                } else {
+                    alert('Erro: ' + (data.message || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                alert('Erro ao processar a solicitação. Por favor, verifique se você está logado como administrador e tente novamente.');
+            });
+        }
+
+        // Função para excluir usuário
+        function deleteUser(userId, userName) {
+            if (confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário "${userName}"?`)) {
+                // Criar requisição para o endpoint correto
+                const formData = new FormData();
+                formData.append('action', 'updateUserStatus');  // Verifique se esta action existe ou use 'deleteUser'
+                formData.append('user_id', userId);
+                formData.append('status', 'inativo');  // Ou outro status para exclusão lógica
+                
+                fetch('../../controllers/AdminController.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status) {
+                        alert('Usuário excluído com sucesso!');
+                        location.reload();
+                    } else {
+                        alert('Erro ao excluir usuário: ' + (data.message || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
+                });
             }
-        })
-        .catch(error => {
-            console.error('Erro:', error);
-            alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
-        });
-    }
-}
+        }
 
-// Função para enviar formulário
-function submitUserForm(event) {
-    event.preventDefault();
-    
-    // Obter dados do formulário
-    const form = document.getElementById('userForm');
-    const formData = new FormData(form);
-    const userId = formData.get('id');
-    
-    // Definir a URL e os parâmetros corretos
-    let url = userId ? '../../controllers/AdminController.php' : '../../controllers/AuthController.php';
-    let params = new FormData();
-    
-    if (userId) {
-        // Editar usuário existente
-        params.append('action', 'updateUser');
-        params.append('user_id', userId);
-        params.append('nome', formData.get('nome'));
-        params.append('email', formData.get('email'));
-        params.append('telefone', formData.get('telefone') || '');
-        params.append('status', formData.get('status'));
-        
-        if (document.getElementById('userType')) {
-            params.append('tipo', formData.get('tipo') || 'cliente');
+        // Função para enviar formulário
+        function submitUserForm(event) {
+            event.preventDefault();
+            
+            // Obter dados do formulário
+            const form = document.getElementById('userForm');
+            const formData = new FormData(form);
+            const userId = formData.get('id');
+            
+            // Definir a URL e os parâmetros corretos
+            let url = userId ? '../../controllers/AdminController.php' : '../../controllers/AuthController.php';
+            let params = new FormData();
+            
+            if (userId) {
+                // Editar usuário existente
+                params.append('action', 'updateUser');
+                params.append('user_id', userId);
+                params.append('nome', formData.get('nome'));
+                params.append('email', formData.get('email'));
+                params.append('telefone', formData.get('telefone') || '');
+                params.append('status', formData.get('status'));
+                
+                // Senha opcional na edição
+                if (formData.get('senha')) {
+                    params.append('senha', formData.get('senha'));
+                }
+            } else {
+                // Adicionar novo usuário
+                params.append('action', 'register');
+                params.append('nome', formData.get('nome'));
+                params.append('email', formData.get('email'));
+                params.append('telefone', formData.get('telefone') || '');
+                params.append('senha', formData.get('senha'));
+                // Tipo padrão: cliente
+                params.append('tipo', 'cliente');
+            }
+            
+            // Enviar requisição
+            fetch(url, {
+                method: 'POST',
+                body: params
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status) {
+                    alert(userId ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
+                    hideUserModal();
+                    location.reload();
+                } else {
+                    alert('Erro: ' + (data.message || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
+            });
         }
-        
-        // Senha opcional na edição
-        if (formData.get('senha')) {
-            params.append('senha', formData.get('senha'));
-        }
-    } else {
-        // Adicionar novo usuário
-        params.append('action', 'register');
-        params.append('nome', formData.get('nome'));
-        params.append('email', formData.get('email'));
-        params.append('telefone', formData.get('telefone') || '');
-        params.append('senha', formData.get('senha'));
-        // Tipo padrão: cliente
-        params.append('tipo', formData.get('tipo') || 'cliente');
-    }
-    
-    // Enviar requisição
-    fetch(url, {
-        method: 'POST',
-        body: params
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status) {
-            alert(userId ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
-            hideUserModal();
-            location.reload();
-        } else {
-            alert('Erro: ' + (data.message || 'Erro desconhecido'));
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao processar a solicitação. Verifique o console para mais detalhes.');
-    });
-}
 
-// Função para marcar/desmarcar todos os checkboxes
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.user-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
-}
+        // Função para marcar/desmarcar todos os checkboxes
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
     </script>
 </body>
 </html>
