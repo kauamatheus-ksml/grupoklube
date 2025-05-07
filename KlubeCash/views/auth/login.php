@@ -283,7 +283,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: #ddd;
             margin: 0 10px;
         }
+/* Adicione este código no seu arquivo responsive.css ou diretamente no estilo da página */
 
+@media (max-width: 991px) {
+
+    /* Oculta toda a estrutura de painéis usada no desktop */
+    .login-page .left-panel {
+        display: none;
+    }
+    
+    /* Oculta o painel direito como estrutura separada */
+    .login-page .right-panel {
+        width: 100%;
+    }
+    
+    /* Oculta as ilustrações explicitamente */
+    .illustrations, 
+    .illustration-left, 
+    .illustration-right {
+        display: none;
+    }
+    
+    /* Garante que o logo mobile fique visível */
+    .logo-container {
+        display: block;
+    }
+    
+    /* Ajusta o container de login para preencher a tela disponível */
+    .login-container {
+        width: 90%;
+        margin: 0 auto;
+        max-width: 450px;
+    }
+    
+    /* Faz o body usar o layout mobile */
+    body {
+        background-color: var(--primary-color);
+        flex-direction: column;
+    }
+}
         /* Estilos para desktop */
         @media (min-width: 992px) {
             body {
