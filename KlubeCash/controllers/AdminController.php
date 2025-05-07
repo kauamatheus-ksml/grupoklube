@@ -6,7 +6,15 @@ require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../config/email.php';
 require_once __DIR__ . '/../utils/Validator.php';
 require_once __DIR__ . '/AuthController.php';
+// No início do arquivo, após os includes
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
 
+// Adicione um manipulador de erros para registrar erros sem exibi-los
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("Erro PHP [$errno]: $errstr em $errfile:$errline");
+    return true;
+});
 /**
  * Controlador de Administração
  * Gerencia operações administrativas como gerenciamento de usuários,
@@ -498,6 +506,47 @@ class AdminController {
         } catch (PDOException $e) {
             error_log('Erro ao atualizar usuário: ' . $e->getMessage());
             return ['status' => false, 'message' => 'Erro ao atualizar usuário: ' . $e->getMessage()];
+        }
+    }
+    public static function updateUserStatus($userId, $status) {
+        try {
+            // Verificar se é um administrador
+            if (!self::validateAdmin()) {
+                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
+            }
+            
+            // Validar status
+            $validStatus = [USER_ACTIVE, 'inativo', 'bloqueado'];
+            if (!in_array($status, $validStatus)) {
+                return ['status' => false, 'message' => 'Status inválido.'];
+            }
+            
+            $db = Database::getConnection();
+            
+            // Verificar se o usuário existe
+            $checkStmt = $db->prepare("SELECT id FROM usuarios WHERE id = :user_id");
+            $checkStmt->bindParam(':user_id', $userId);
+            $checkStmt->execute();
+            
+            if ($checkStmt->rowCount() == 0) {
+                return ['status' => false, 'message' => 'Usuário não encontrado.'];
+            }
+            
+            // Atualizar status
+            $updateStmt = $db->prepare("UPDATE usuarios SET status = :status WHERE id = :user_id");
+            $updateStmt->bindParam(':status', $status);
+            $updateStmt->bindParam(':user_id', $userId);
+            $success = $updateStmt->execute();
+            
+            if ($success) {
+                return ['status' => true, 'message' => 'Status do usuário atualizado com sucesso.'];
+            } else {
+                return ['status' => false, 'message' => 'Falha ao atualizar status do usuário.'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log('Erro ao atualizar status do usuário: ' . $e->getMessage());
+            return ['status' => false, 'message' => 'Erro ao atualizar status do usuário: ' . $e->getMessage()];
         }
     }
     

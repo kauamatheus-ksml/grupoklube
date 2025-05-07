@@ -56,6 +56,7 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Usuários - Klube Cash</title>
+    <link rel="shortcut icon" type="image/jpg" href="../../assets/images/icons/KlubeCashLOGO.ico"/>
     <style>
         :root {
             --primary-color: #FF7A00;
