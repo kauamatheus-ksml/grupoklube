@@ -13,7 +13,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 // Verificar se o usuário está logado
-session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: /klube-cash/views/auth/login.php');
     exit;
@@ -115,3 +114,46 @@ $activeMenu = $activeMenu ?? 'painel';
         </a>
     </div>
 </div>
+<!-- Script da Sidebar -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos da DOM
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const mainContent = document.getElementById('mainContent');
+    
+    // Evento para mostrar/ocultar a sidebar em dispositivos móveis
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+    
+    if (overlay) {
+        overlay.addEventListener('click', toggleSidebar);
+    }
+    
+    /**
+     * Alterna a visibilidade da sidebar em dispositivos móveis
+     */
+    function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+    }
+    
+    /**
+     * Verifica o tamanho da tela e ajusta a sidebar conforme necessário
+     */
+    function checkScreenSize() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+    }
+    
+    // Verificar o tamanho da tela ao carregar e redimensionar
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Inicializar
+    checkScreenSize();
+});
+</script>
