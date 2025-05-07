@@ -1,5 +1,5 @@
 <?php
-//views/admin/users.php
+// views/admin/users.php
 // Definir o menu ativo na sidebar
 $activeMenu = 'usuarios';
 
@@ -34,20 +34,29 @@ if (!empty($status)) {
     $filters['status'] = $status;
 }
 if (!empty($type)) {
+    // Aqui está a correção principal - mapear 'type' para 'tipo' que é o esperado pelo controller
     $filters['tipo'] = $type;
 }
 
-// Obter dados dos usuários
-$result = AdminController::manageUsers($filters, $page);
+try {
+    // Obter dados dos usuários
+    $result = AdminController::manageUsers($filters, $page);
 
-// Verificar se houve erro
-$hasError = !$result['status'];
-$errorMessage = $hasError ? $result['message'] : '';
+    // Verificar se houve erro
+    $hasError = !$result['status'];
+    $errorMessage = $hasError ? $result['message'] : '';
 
-// Dados para exibição na página
-$users = $hasError ? [] : $result['data']['usuarios'];
-$statistics = $hasError ? [] : $result['data']['estatisticas'];
-$pagination = $hasError ? [] : $result['data']['paginacao'];
+    // Dados para exibição na página
+    $users = $hasError ? [] : $result['data']['usuarios'];
+    $statistics = $hasError ? [] : $result['data']['estatisticas'];
+    $pagination = $hasError ? [] : $result['data']['paginacao'];
+} catch (Exception $e) {
+    $hasError = true;
+    $errorMessage = "Erro ao processar a requisição: " . $e->getMessage();
+    $users = [];
+    $statistics = [];
+    $pagination = [];
+}
 ?>
 
 <!DOCTYPE html>
@@ -142,6 +151,13 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             margin-bottom: 20px;
         }
         
+        .filters-form {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
+        
         .search-bar {
             position: relative;
             width: 300px;
@@ -169,6 +185,9 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             top: 50%;
             transform: translateY(-50%);
             color: var(--primary-color);
+            background: none;
+            border: none;
+            cursor: pointer;
         }
         
         /* Botões */
@@ -543,7 +562,12 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
                 gap: 15px;
             }
             
-            .search-bar {
+            .filters-form {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .search-bar, .filter-controls {
                 width: 100%;
             }
             
@@ -577,31 +601,33 @@ $pagination = $hasError ? [] : $result['data']['paginacao'];
             
             <!-- Barra de Busca e Filtros -->
             <div class="actions-bar">
-                <form method="GET" action="" class="search-bar">
-                    <input type="text" name="search" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
-                    <button type="submit" class="search-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
-                </form>
-                
-                <div class="filter-controls">
-                    <select name="status" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;" onchange="this.form.submit()">
-                        <option value="">Todos os status</option>
-                        <option value="ativo" <?php echo $status === 'ativo' ? 'selected' : ''; ?>>Ativo</option>
-                        <option value="inativo" <?php echo $status === 'inativo' ? 'selected' : ''; ?>>Inativo</option>
-                        <option value="bloqueado" <?php echo $status === 'bloqueado' ? 'selected' : ''; ?>>Bloqueado</option>
-                    </select>
+                <form method="GET" action="" class="filters-form">
+                    <div class="search-bar">
+                        <input type="text" name="search" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
+                        <button type="submit" class="search-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
                     
-                    <select name="type" class="form-select" style="width: auto; display: inline-block;" onchange="this.form.submit()">
-                        <option value="">Todos os tipos</option>
-                        <option value="cliente" <?php echo $type === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
-                        <option value="admin" <?php echo $type === 'admin' ? 'selected' : ''; ?>>Administrador</option>
-                        <option value="loja" <?php echo $type === 'loja' ? 'selected' : ''; ?>>Loja</option>
-                    </select>
-                </div>
+                    <div class="filter-controls">
+                        <select name="status" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;" onchange="this.form.submit()">
+                            <option value="">Todos os status</option>
+                            <option value="ativo" <?php echo $status === 'ativo' ? 'selected' : ''; ?>>Ativo</option>
+                            <option value="inativo" <?php echo $status === 'inativo' ? 'selected' : ''; ?>>Inativo</option>
+                            <option value="bloqueado" <?php echo $status === 'bloqueado' ? 'selected' : ''; ?>>Bloqueado</option>
+                        </select>
+                        
+                        <select name="type" class="form-select" style="width: auto; display: inline-block;" onchange="this.form.submit()">
+                            <option value="">Todos os tipos</option>
+                            <option value="cliente" <?php echo $type === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
+                            <option value="admin" <?php echo $type === 'admin' ? 'selected' : ''; ?>>Administrador</option>
+                            <option value="loja" <?php echo $type === 'loja' ? 'selected' : ''; ?>>Loja</option>
+                        </select>
+                    </div>
+                </form>
             </div>
             
             <!-- Card Principal -->
