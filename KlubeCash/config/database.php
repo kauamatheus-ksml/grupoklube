@@ -6,9 +6,9 @@
  */
 
 // Parâmetros de conexão com o banco de dados
-define('DB_HOST', 'srv1783.hstgr.io'); // ou '193.203.175.175'
-define('DB_NAME', 'u153409541_klubecash');
-define('DB_USER', 'u153409541_klubecash');
+define('DB_HOST', 'srv406.hstgr.io'); // ou '45.89.204.5'
+define('DB_NAME', 'u383946504_klubecash');
+define('DB_USER', 'u383946504_klubecash');
 define('DB_PASS', 'Aaku_2004@'); // Substitua pela senha real
 
 /**
