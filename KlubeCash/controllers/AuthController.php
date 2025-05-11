@@ -435,7 +435,7 @@ if (basename($_SERVER['PHP_SELF']) === 'AuthController.php') {
                     exit;
                 } else {
                     // Redirecionar de volta com mensagem de erro
-                    header('Location: ../views/auth/login.php?error=' . urlencode($result['message']));
+                    header('Location: ' . SITE_URL . '/login?error=' . urlencode($result['message']));
                     exit;
                 }
             }
@@ -466,7 +466,7 @@ if (basename($_SERVER['PHP_SELF']) === 'AuthController.php') {
                         if ($result['status']) {
                             header('Location: ../views/auth/login.php?success=' . urlencode($result['message']));
                         } else {
-                            header('Location: ../views/auth/register.php?error=' . urlencode($result['message']));
+                            header('Location: ' . SITE_URL . '/registro?error=' . urlencode($result['message']));
                         }
                         exit;
                     }
@@ -485,7 +485,7 @@ if (basename($_SERVER['PHP_SELF']) === 'AuthController.php') {
                     exit;
                 } else {
                     // Redirecionar com mensagem de erro
-                    header('Location: ../views/auth/recover-password.php?error=' . urlencode($result['message']));
+                    header('Location: ' . SITE_URL . '/recuperar-senha?error=' . urlencode($result['message']));
                     exit;
                 }
             }
