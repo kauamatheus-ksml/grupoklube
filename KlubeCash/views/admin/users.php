@@ -34,7 +34,7 @@ if (!empty($status)) {
     $filters['status'] = $status;
 }
 if (!empty($type)) {
-    $filters['tipo'] = $type; // 'type' é mapeado para 'tipo' para o controller
+    $filters['tipo'] = $type;
 }
 
 // Verificar valores dos filtros para debug
@@ -1067,6 +1067,33 @@ try {
             
             document.getElementById('typeFilter').addEventListener('change', function() {
                 document.getElementById('searchForm').submit();
+            });
+        });
+        // Melhorar a funcionalidade de pesquisa
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focar o campo de busca quando a página carrega
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput.value) {
+                // Se já tiver texto, posicione o cursor no final
+                const len = searchInput.value.length;
+                searchInput.setSelectionRange(len, len);
+            }
+            
+            // Permitir pesquisa ao pressionar Enter
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('searchForm').submit();
+                }
+            });
+            
+            // Limpar pesquisa quando o campo estiver vazio e o usuário pressionar Backspace
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Backspace' && this.value === '') {
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.delete('search');
+                    window.location.href = currentUrl.toString();
+                }
             });
         });
     </script>

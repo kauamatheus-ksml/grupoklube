@@ -193,8 +193,9 @@ class AdminController {
                 
                 // Filtro por busca (nome ou email)
                 if (isset($filters['busca']) && !empty($filters['busca'])) {
-                    $query .= " AND (nome LIKE :busca OR email LIKE :busca)";
-                    $params[':busca'] = '%' . $filters['busca'] . '%';
+                    $query .= " AND (nome LIKE :busca_nome OR email LIKE :busca_email)";
+                    $params[':busca_nome'] = '%' . $filters['busca'] . '%';
+                    $params[':busca_email'] = '%' . $filters['busca'] . '%';
                 }
                 
                 // Filtro por data de criação
@@ -215,7 +216,34 @@ class AdminController {
             $query .= " ORDER BY $orderBy $orderDir";
             
             // Calcular total de registros para paginação
-            $countStmt = $db->prepare(str_replace('id, nome, email, tipo, status, data_criacao, ultimo_login', 'COUNT(*) as total', $query));
+            $countQuery = "
+                SELECT COUNT(*) as total 
+                FROM usuarios 
+                WHERE 1=1
+            ";
+            if (!empty($filters)) {
+                if (isset($filters['tipo']) && !empty($filters['tipo'])) {
+                    $countQuery .= " AND tipo = :tipo";
+                }
+                
+                if (isset($filters['status']) && !empty($filters['status'])) {
+                    $countQuery .= " AND status = :status";
+                }
+                
+                if (isset($filters['busca']) && !empty($filters['busca'])) {
+                    $countQuery .= " AND (nome LIKE :busca_nome OR email LIKE :busca_email)";
+                }
+                
+                if (isset($filters['data_inicio']) && !empty($filters['data_inicio'])) {
+                    $countQuery .= " AND data_criacao >= :data_inicio";
+                }
+                
+                if (isset($filters['data_fim']) && !empty($filters['data_fim'])) {
+                    $countQuery .= " AND data_criacao <= :data_fim";
+                }
+            }
+
+            $countStmt = $db->prepare($countQuery);
             foreach ($params as $param => $value) {
                 $countStmt->bindValue($param, $value);
             }
@@ -279,7 +307,10 @@ class AdminController {
             
         } catch (PDOException $e) {
             error_log('Erro ao gerenciar usuários: ' . $e->getMessage());
-            return ['status' => false, 'message' => 'Erro ao carregar usuários. Tente novamente.'];
+            return [
+                'status' => false, 
+                'message' => 'Erro ao carregar usuários: ' . $e->getMessage()
+            ];
         }
     }
     
@@ -290,137 +321,7 @@ class AdminController {
      * @return array Dados do usuário
      */
     
-     public static function getUserDetails($userId) {
-        try {
-            // Log para debug
-            error_log("Obtendo detalhes do usuário ID: $userId");
-            
-            // Verificar se é um administrador
-            if (!self::validateAdmin()) {
-                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
-            }
-            
-            $db = Database::getConnection();
-            
-            // Obter dados do usuário
-            $stmt = $db->prepare("
-                SELECT id, nome, email, tipo, status, data_criacao, ultimo_login
-                FROM usuarios
-                WHERE id = :user_id
-            ");
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->execute();
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$user) {
-                return ['status' => false, 'message' => 'Usuário não encontrado.'];
-            }
-            
-            // Garantir que estamos retornando um array associativo
-            return [
-                'status' => true,
-                'data' => [
-                    'usuario' => $user
-                ]
-            ];
-            
-        } catch (PDOException $e) {
-            error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
-            return ['status' => false, 'message' => 'Erro ao carregar detalhes do usuário. Tente novamente.'];
-        }
-        try {
-            // Verificar se é um administrador
-            if (!self::validateAdmin()) {
-                return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
-            }
-            
-            $db = Database::getConnection();
-            
-            // Obter dados do usuário
-            $stmt = $db->prepare("
-                SELECT id, nome, email, tipo, status, data_criacao, ultimo_login
-                FROM usuarios
-                WHERE id = :user_id
-            ");
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->execute();
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$user) {
-                return ['status' => false, 'message' => 'Usuário não encontrado.'];
-            }
-            
-            // Obter endereço do usuário se existir
-            $addressStmt = $db->prepare("
-                SELECT *
-                FROM usuarios_endereco
-                WHERE usuario_id = :user_id
-                ORDER BY principal DESC
-                LIMIT 1
-            ");
-            $addressStmt->bindParam(':user_id', $userId);
-            $addressStmt->execute();
-            $address = $addressStmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Obter contato do usuário se existir
-            $contactStmt = $db->prepare("
-                SELECT *
-                FROM usuarios_contato
-                WHERE usuario_id = :user_id
-                LIMIT 1
-            ");
-            $contactStmt->bindParam(':user_id', $userId);
-            $contactStmt->execute();
-            $contact = $contactStmt->fetch(PDO::FETCH_ASSOC);
-            
-            // Estatísticas para clientes
-            $statistics = null;
-            if ($user['tipo'] == USER_TYPE_CLIENT) {
-                $statsStmt = $db->prepare("
-                    SELECT 
-                        COUNT(*) as total_transacoes,
-                        SUM(valor_total) as total_compras,
-                        SUM(valor_cashback) as total_cashback
-                    FROM transacoes_cashback
-                    WHERE usuario_id = :user_id
-                ");
-                $statsStmt->bindParam(':user_id', $userId);
-                $statsStmt->execute();
-                $statistics = $statsStmt->fetch(PDO::FETCH_ASSOC);
-            }
-            
-            // Últimas transações para clientes
-            $transactions = null;
-            if ($user['tipo'] == USER_TYPE_CLIENT) {
-                $transStmt = $db->prepare("
-                    SELECT t.*, l.nome_fantasia as loja_nome
-                    FROM transacoes_cashback t
-                    JOIN lojas l ON t.loja_id = l.id
-                    WHERE t.usuario_id = :user_id
-                    ORDER BY t.data_transacao DESC
-                    LIMIT 5
-                ");
-                $transStmt->bindParam(':user_id', $userId);
-                $transStmt->execute();
-                $transactions = $transStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-            
-            return [
-                'status' => true,
-                'data' => [
-                    'usuario' => $user,
-                    'endereco' => $address ?: null,
-                    'contato' => $contact ?: null,
-                    'estatisticas' => $statistics,
-                    'transacoes' => $transactions
-                ]
-            ];
-            
-        } catch (PDOException $e) {
-            error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
-            return ['status' => false, 'message' => 'Erro ao carregar detalhes do usuário. Tente novamente.'];
-        }
-    }
+     
     
     /**
      * Atualiza status de um usuário
@@ -1070,7 +971,7 @@ class AdminController {
             $query .= " ORDER BY $orderBy $orderDir";
             
             // Calcular total de registros para paginação
-            $countStmt = $db->prepare(str_replace('t.*, u.nome as cliente_nome, l.nome_fantasia as loja_nome', 'COUNT(*) as total', $query));
+            $countStmt = $db->prepare(str_replace('id, nome, email, tipo, status, data_criacao, ultimo_login', 'COUNT(*) as total', $query));
             foreach ($params as $param => $value) {
                 $countStmt->bindValue($param, $value);
             }

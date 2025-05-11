@@ -441,26 +441,37 @@ if (basename($_SERVER['PHP_SELF']) === 'AuthController.php') {
             }
             break;
             
-        case 'register':
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $nome = $_POST['nome'] ?? '';
-                $email = $_POST['email'] ?? '';
-                $telefone = $_POST['telefone'] ?? '';
-                $senha = $_POST['senha'] ?? '';
-                
-                $result = AuthController::register($nome, $email, $telefone, $senha);
-                
-                if ($result['status']) {
-                    // Redirecionar para página de sucesso
-                    header('Location: ../views/auth/login.php?success=' . urlencode($result['message']));
-                    exit;
-                } else {
-                    // Redirecionar de volta com mensagem de erro
-                    header('Location: ../views/auth/register.php?error=' . urlencode($result['message']));
-                    exit;
+            case 'register':
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $nome = $_POST['nome'] ?? '';
+                    $email = $_POST['email'] ?? '';
+                    $telefone = $_POST['telefone'] ?? '';
+                    $senha = $_POST['senha'] ?? '';
+                    $tipo = $_POST['tipo'] ?? null; // Adicionado suporte para o tipo
+                    
+                    $result = AuthController::register($nome, $email, $telefone, $senha, $tipo);
+                    
+                    // Verificar se é uma requisição AJAX
+                    $isAjax = isset($_POST['ajax']) || 
+                             (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+                    
+                    if ($isAjax) {
+                        // Responder com JSON para requisições AJAX
+                        header('Content-Type: application/json');
+                        echo json_encode($result);
+                        exit;
+                    } else {
+                        // Redirecionar para páginas normais
+                        if ($result['status']) {
+                            header('Location: ../views/auth/login.php?success=' . urlencode($result['message']));
+                        } else {
+                            header('Location: ../views/auth/register.php?error=' . urlencode($result['message']));
+                        }
+                        exit;
+                    }
                 }
-            }
-            break;
+                break;
             
         case 'recover':
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
