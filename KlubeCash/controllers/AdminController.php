@@ -514,9 +514,36 @@ class AdminController {
             $query .= " ORDER BY $orderBy $orderDir";
             
             // Calcular total de registros para paginação
-            $countStmt = $db->prepare(str_replace('*', 'COUNT(*) as total', $query));
+            $countQuery = "
+            SELECT COUNT(*) as total 
+            FROM usuarios 
+            WHERE 1=1
+            ";
+            if (!empty($filters)) {
+            if (isset($filters['tipo']) && !empty($filters['tipo'])) {
+                $countQuery .= " AND tipo = :tipo";
+            }
+
+            if (isset($filters['status']) && !empty($filters['status'])) {
+                $countQuery .= " AND status = :status";
+            }
+
+            if (isset($filters['busca']) && !empty($filters['busca'])) {
+                $countQuery .= " AND (nome LIKE :busca_nome OR email LIKE :busca_email)";
+            }
+
+            if (isset($filters['data_inicio']) && !empty($filters['data_inicio'])) {
+                $countQuery .= " AND data_criacao >= :data_inicio";
+            }
+
+            if (isset($filters['data_fim']) && !empty($filters['data_fim'])) {
+                $countQuery .= " AND data_criacao <= :data_fim";
+            }
+            }
+
+            $countStmt = $db->prepare($countQuery);
             foreach ($params as $param => $value) {
-                $countStmt->bindValue($param, $value);
+            $countStmt->bindValue($param, $value);
             }
             $countStmt->execute();
             $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -970,13 +997,7 @@ class AdminController {
             $orderDir = isset($filters['order_dir']) && strtolower($filters['order_dir']) == 'asc' ? 'ASC' : 'DESC';
             $query .= " ORDER BY $orderBy $orderDir";
             
-            // Calcular total de registros para paginação
             $countStmt = $db->prepare(str_replace('id, nome, email, tipo, status, data_criacao, ultimo_login', 'COUNT(*) as total', $query));
-            foreach ($params as $param => $value) {
-                $countStmt->bindValue($param, $value);
-            }
-            $countStmt->execute();
-            $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
             
             // Adicionar paginação
             $perPage = ITEMS_PER_PAGE;
