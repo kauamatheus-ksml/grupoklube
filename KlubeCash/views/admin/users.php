@@ -298,8 +298,8 @@ try {
             color: #2196F3;
         }
         
-        .action-btn.delete:hover {
-            color: var(--danger-color);
+        .action-btn.deactivate:hover {
+            color: var(--warning-color);
         }
         
         /* Checkbox personalizado */
@@ -308,13 +308,16 @@ try {
             position: relative;
             width: 20px;
             height: 20px;
+            cursor: pointer; /* Adicione cursor pointer */
         }
         
         .checkbox-wrapper input[type="checkbox"] {
             opacity: 0;
             position: absolute;
-            width: 0;
-            height: 0;
+            width: 100%; /* Altere para cobrir toda a área */
+            height: 100%;
+            z-index: 2; /* Adicione um z-index maior */
+            cursor: pointer;
         }
         
         .checkmark {
@@ -327,6 +330,7 @@ try {
             border: 2px solid #ddd;
             border-radius: 4px;
             transition: all 0.3s;
+            z-index: 1; /* Adicione um z-index menor */
         }
         
         .checkbox-wrapper input[type="checkbox"]:checked ~ .checkmark {
@@ -528,7 +532,41 @@ try {
             color: var(--medium-gray);
             margin-top: 5px;
         }
-        
+        .bulk-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #FFF0E6;
+            border: 1px solid #FFD9B3;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+
+        .selected-count {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
         /* Responsividade */
         @media (max-width: 768px) {
             .main-content {
@@ -536,7 +574,7 @@ try {
             }
             
             .page-wrapper {
-                padding: 20px 15px;
+                padding: 75px 20px;
             }
             
             .page-header {
@@ -578,6 +616,15 @@ try {
                 <button class="btn btn-primary" onclick="showUserModal()">Adicionar Usuário</button>
             </div>
 
+            <div id="bulkActionBar" class="bulk-action-bar" style="display: none;">
+                <div class="selected-count">
+                    <span id="selectedCount">0</span> usuários selecionados
+                </div>
+                <div class="bulk-actions">
+                    <button class="btn btn-warning btn-sm" onclick="bulkAction('inativo')">Desativar</button>
+                    <button class="btn btn-danger btn-sm" onclick="bulkAction('bloqueado')">Bloquear</button>
+                </div>
+            </div>
             <!-- Container de mensagens -->
             <div id="messageContainer" class="alert-container"></div>
             
@@ -595,10 +642,10 @@ try {
                         <thead>
                             <tr>
                                 <th>
-                                    <div class="checkbox-wrapper">
-                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                                        <span class="checkmark"></span>
-                                    </div>
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" class="user-checkbox" value="<?php echo $user['id']; ?>" onchange="toggleUserSelection(this, <?php echo $user['id']; ?>)">
+                                    <span class="checkmark"></span>
+                                </div>
                                 </th>
                                 <th>Nome</th>
                                 <th>E-mail</th>
@@ -653,12 +700,10 @@ try {
                                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                     </svg>
                                                 </button>
-                                                <button class="action-btn delete" onclick="deleteUser(<?php echo $user['id']; ?>, '<?php echo addslashes($user['nome']); ?>')">
+                                                <button class="action-btn deactivate" onclick="deactivateUser(<?php echo $user['id']; ?>, '<?php echo addslashes($user['nome']); ?>')">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                        <circle cx="12" cy="12" r="10"></circle>
+                                                        <line x1="8" y1="12" x2="16" y2="12"></line>
                                                     </svg>
                                                 </button>
                                             </div>
@@ -755,7 +800,7 @@ try {
                     </select>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="passwordGroup">
                     <label class="form-label" for="userPassword">Senha</label>
                     <input type="password" class="form-control" id="userPassword" name="senha" required>
                     <small id="passwordHelp" class="form-text">Mínimo de 8 caracteres</small>
@@ -771,243 +816,315 @@ try {
     
     <script>
         // Variáveis globais
-        let currentUserId = null;
+let currentUserId = null;
+let selectedUsers = [];
 
-        // Função para exibir mensagens
-        function showMessage(message, type = 'success') {
-            const messageContainer = document.getElementById('messageContainer');
-            messageContainer.innerHTML = `
-                <div class="alert alert-${type}">
-                    ${message}
-                </div>
-            `;
+// Função para exibir mensagens
+function showMessage(message, type = 'success') {
+    const messageContainer = document.getElementById('messageContainer');
+    messageContainer.innerHTML = `
+        <div class="alert alert-${type}">
+            ${message}
+        </div>
+    `;
+    
+    // Rolar para a mensagem
+    messageContainer.scrollIntoView({ behavior: 'smooth' });
+    
+    // Remover a mensagem após 5 segundos
+    setTimeout(() => {
+        messageContainer.innerHTML = '';
+    }, 5000);
+}
+
+// Função para mostrar modal de adicionar usuário
+function showUserModal() {
+    document.getElementById('userModalTitle').textContent = 'Adicionar Usuário';
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = '';
+    document.getElementById('userPassword').required = true;
+    document.getElementById('passwordGroup').style.display = 'block';
+    document.getElementById('passwordHelp').textContent = 'Mínimo de 8 caracteres';
+    currentUserId = null;
+    
+    // Mostrar modal
+    document.getElementById('userModal').classList.add('show');
+}
+
+// Função para esconder modal
+function hideUserModal() {
+    document.getElementById('userModal').classList.remove('show');
+}
+
+// Função para editar usuário
+function editUser(userId) {
+    // Armazenar ID do usuário atual
+    currentUserId = userId;
+    
+    // Mostrar carregamento
+    document.getElementById('userModalTitle').textContent = 'Carregando...';
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = userId;
+    document.getElementById('userModal').classList.add('show');
+    
+    // Fazer requisição AJAX para obter dados do usuário
+    fetch('../../controllers/AdminController.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=getUserDetails&user_id=' + userId
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na requisição: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status && data.data && data.data.usuario) {
+            const userData = data.data.usuario;
             
-            // Rolar para a mensagem
-            messageContainer.scrollIntoView({ behavior: 'smooth' });
+            // Preencher o formulário
+            document.getElementById('userModalTitle').textContent = 'Editar Usuário';
+            document.getElementById('userId').value = userData.id;
+            document.getElementById('userName').value = userData.nome;
+            document.getElementById('userEmail').value = userData.email;
             
-            // Remover a mensagem após 5 segundos
+            // Campo telefone
+            if (userData.telefone) {
+                document.getElementById('userPhone').value = userData.telefone;
+            }
+            
+            document.getElementById('userType').value = userData.tipo;
+            document.getElementById('userStatus').value = userData.status;
+            
+            // Ocultar campo de senha na edição
+            document.getElementById('passwordGroup').style.display = 'none';
+            document.getElementById('userPassword').required = false;
+            document.getElementById('userPassword').value = '';
+        } else {
+            hideUserModal();
+            showMessage(data.message || 'Erro ao carregar dados do usuário', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        hideUserModal();
+        showMessage('Erro ao carregar dados do usuário: ' + error.message, 'danger');
+    });
+}
+
+// Função para desativar usuário
+function deactivateUser(userId, userName) {
+    if (confirm(`Tem certeza que deseja desativar o usuário "${userName}"?`)) {
+        fetch('../../controllers/AdminController.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=update_user_status&user_id=' + userId + '&status=inativo'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status) {
+                showMessage('Usuário desativado com sucesso!');
+                setTimeout(() => { location.reload(); }, 1000);
+            } else {
+                showMessage(data.message || 'Erro ao desativar usuário', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
+        });
+    }
+}
+
+// Função para enviar formulário
+function submitUserForm(event) {
+    event.preventDefault();
+    
+    // Obter dados do formulário
+    const form = document.getElementById('userForm');
+    const formData = new FormData(form);
+    
+    // Verificar se estamos editando ou criando
+    const userId = formData.get('id');
+    const isEditing = userId !== '';
+    
+    // Mostrar indicador de carregamento
+    const saveButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = saveButton.textContent;
+    saveButton.textContent = 'Salvando...';
+    saveButton.disabled = true;
+    
+    // Converter FormData para URLSearchParams para melhor compatibilidade
+    const data = new URLSearchParams();
+    
+    if (isEditing) {
+        // Para edição, usamos AdminController.php com action=update_user
+        data.append('action', 'update_user');
+        data.append('user_id', userId);
+        data.append('nome', formData.get('nome'));
+        data.append('email', formData.get('email'));
+        data.append('telefone', formData.get('telefone') || '');
+        data.append('tipo', formData.get('tipo'));
+        data.append('status', formData.get('status'));
+        
+        // Senha opcional
+        if (formData.get('senha') && formData.get('senha').trim() !== '') {
+            data.append('senha', formData.get('senha'));
+        }
+        
+        var url = '../../controllers/AdminController.php';
+    } else {
+        // Para criação, usamos AuthController.php
+        data.append('action', 'register');
+        data.append('nome', formData.get('nome'));
+        data.append('email', formData.get('email'));
+        data.append('telefone', formData.get('telefone') || '');
+        data.append('senha', formData.get('senha'));
+        data.append('tipo', formData.get('tipo'));
+        data.append('ajax', '1'); // Indicar que é uma chamada AJAX
+        
+        var url = '../../controllers/AuthController.php';
+    }
+    
+    // Enviar requisição
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: data
+    })
+    .then(response => {
+        return response.text();
+    })
+    .then(text => {
+        console.log('Resposta completa do servidor:', text);
+        
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("Falha ao analisar JSON:", text);
+            throw new Error("Resposta do servidor não é JSON válido");
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.status) {
+            hideUserModal();
+            showMessage(isEditing ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
             setTimeout(() => {
-                messageContainer.innerHTML = '';
-            }, 5000);
+                location.reload();
+            }, 1000);
+        } else {
+            showMessage(data.message || 'Erro ao processar solicitação', 'danger');
         }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        saveButton.textContent = originalButtonText;
+        saveButton.disabled = false;
+    });
+}
 
-        // Função para mostrar modal de adicionar usuário
-        function showUserModal() {
-            document.getElementById('userModalTitle').textContent = 'Adicionar Usuário';
-            document.getElementById('userForm').reset();
-            document.getElementById('userId').value = '';
-            document.getElementById('userPassword').required = true;
-            document.getElementById('passwordHelp').textContent = 'Mínimo de 8 caracteres';
-            currentUserId = null;
-            
-            // Mostrar modal
-            document.getElementById('userModal').classList.add('show');
+// Função para atualizar a barra de ações em massa
+function updateBulkActionBar() {
+    const bulkActionBar = document.getElementById('bulkActionBar');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    selectedCount.textContent = selectedUsers.length;
+    
+    if (selectedUsers.length > 0) {
+        bulkActionBar.style.display = 'flex';
+    } else {
+        bulkActionBar.style.display = 'none';
+    }
+}
+
+// Função para processar checkbox individual
+function toggleUserSelection(checkbox, userId) {
+    if (checkbox.checked) {
+        if (!selectedUsers.includes(userId)) {
+            selectedUsers.push(userId);
         }
+    } else {
+        selectedUsers = selectedUsers.filter(id => id !== userId);
+        document.getElementById('selectAll').checked = false;
+    }
+    
+    updateBulkActionBar();
+}
 
-        // Função para esconder modal
-        function hideUserModal() {
-            document.getElementById('userModal').classList.remove('show');
+// Função para selecionar/desselecionar todos
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    
+    selectedUsers = [];
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+        if (selectAll.checked) {
+            const userId = parseInt(checkbox.value);
+            if (!selectedUsers.includes(userId)) {
+                selectedUsers.push(userId);
+            }
         }
+    });
+    
+    updateBulkActionBar();
+}
 
-        // Função para editar usuário
-        function editUser(userId) {
-            // Armazenar ID do usuário atual
-            currentUserId = userId;
-            
-            // Mostrar carregamento
-            document.getElementById('userModalTitle').textContent = 'Carregando...';
-            document.getElementById('userForm').reset();
-            document.getElementById('userId').value = userId;
-            document.getElementById('userModal').classList.add('show');
-            
-            // Fazer requisição AJAX para obter dados do usuário
+// Função para executar ação em massa
+function bulkAction(status) {
+    if (selectedUsers.length === 0) return;
+    
+    const actionText = status === 'inativo' ? 'desativar' : 'bloquear';
+    
+    if (confirm(`Tem certeza que deseja ${actionText} ${selectedUsers.length} usuários selecionados?`)) {
+        const bulkActionBar = document.getElementById('bulkActionBar');
+        bulkActionBar.innerHTML = `<div class="selected-count">Processando ${selectedUsers.length} usuários...</div>`;
+        
+        let processed = 0;
+        let successful = 0;
+        
+        selectedUsers.forEach(userId => {
             fetch('../../controllers/AdminController.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'action=getUserDetails&user_id=' + userId
+                body: `action=update_user_status&user_id=${userId}&status=${status}`
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erro na requisição: ' + response.status);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                if (data.status && data.data && data.data.usuario) {
-                    const userData = data.data.usuario;
-                    
-                    // Preencher o formulário
-                    document.getElementById('userModalTitle').textContent = 'Editar Usuário';
-                    document.getElementById('userId').value = userData.id;
-                    document.getElementById('userName').value = userData.nome;
-                    document.getElementById('userEmail').value = userData.email;
-                    
-                    // Campos opcionais
-                    if (userData.telefone) {
-                        document.getElementById('userPhone').value = userData.telefone;
-                    }
-                    
-                    document.getElementById('userType').value = userData.tipo;
-                    document.getElementById('userStatus').value = userData.status;
-                    
-                    // Senha opcional na edição
-                    document.getElementById('userPassword').required = false;
-                    document.getElementById('userPassword').value = '';
-                    document.getElementById('passwordHelp').textContent = 'Deixe em branco para manter a senha atual';
-                } else {
-                    hideUserModal();
-                    showMessage(data.message || 'Erro ao carregar dados do usuário', 'danger');
+                processed++;
+                if (data.status) successful++;
+                
+                if (processed === selectedUsers.length) {
+                    showMessage(`${successful} usuários foram ${actionText === 'desativar' ? 'desativados' : 'bloqueados'} com sucesso!`);
+                    setTimeout(() => { location.reload(); }, 1500);
                 }
             })
-            .catch(error => {
-                console.error('Erro:', error);
-                hideUserModal();
-                showMessage('Erro ao carregar dados do usuário: ' + error.message, 'danger');
+            .catch(() => {
+                processed++;
+                if (processed === selectedUsers.length) {
+                    showMessage(`${successful} usuários foram ${actionText === 'desativar' ? 'desativados' : 'bloqueados'} com sucesso!`);
+                    setTimeout(() => { location.reload(); }, 1500);
+                }
             });
-        }
-
-        // Função para excluir usuário
-        function deleteUser(userId, userName) {
-            if (confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) {
-                fetch('../../controllers/AdminController.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'action=update_user_status&user_id=' + userId + '&status=inativo'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status) {
-                        showMessage('Usuário excluído com sucesso!');
-                        // Recarregar a página após 1 segundo
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1000);
-                    } else {
-                        showMessage(data.message || 'Erro ao excluir usuário', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
-                });
-            }
-        }
-
-        // Função para enviar formulário
-        function submitUserForm(event) {
-            event.preventDefault();
-            
-            // Obter dados do formulário
-            const form = document.getElementById('userForm');
-            const formData = new FormData(form);
-            
-            // Verificar se estamos editando ou criando
-            const userId = formData.get('id');
-            const isEditing = userId !== '';
-            
-            // Mostrar indicador de carregamento
-            const saveButton = form.querySelector('button[type="submit"]');
-            const originalButtonText = saveButton.textContent;
-            saveButton.textContent = 'Salvando...';
-            saveButton.disabled = true;
-            
-            // Converter FormData para URLSearchParams para melhor compatibilidade
-            const data = new URLSearchParams();
-            
-            if (isEditing) {
-                // Para edição, usamos AdminController.php com action=update_user
-                data.append('action', 'update_user');
-                data.append('user_id', userId);
-                data.append('nome', formData.get('nome'));
-                data.append('email', formData.get('email'));
-                data.append('telefone', formData.get('telefone') || '');
-                data.append('tipo', formData.get('tipo'));
-                data.append('status', formData.get('status'));
-                
-                // Senha opcional
-                if (formData.get('senha') && formData.get('senha').trim() !== '') {
-                    data.append('senha', formData.get('senha'));
-                }
-                
-                var url = '../../controllers/AdminController.php';
-            } else {
-                // Para criação, usamos AuthController.php
-                data.append('action', 'register');
-                data.append('nome', formData.get('nome'));
-                data.append('email', formData.get('email'));
-                data.append('telefone', formData.get('telefone') || '');
-                data.append('senha', formData.get('senha'));
-                data.append('tipo', formData.get('tipo'));
-                data.append('ajax', '1'); // Indicar que é uma chamada AJAX
-                
-                var url = '../../controllers/AuthController.php';
-            }
-            
-            // Adicionar logs para debug
-            console.log('Enviando dados para:', url);
-            console.log('Dados sendo enviados:', Object.fromEntries(data));
-            
-            // Enviar requisição
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest' // Adicionar cabeçalho AJAX
-                },
-                body: data
-            })
-            .then(response => {
-                return response.text(); // Obter a resposta como texto primeiro para debug
-            })
-            .then(text => {
-                console.log('Resposta completa do servidor:', text);
-                
-                let data;
-                try {
-                    // Tentar converter texto para JSON
-                    data = JSON.parse(text);
-                } catch (e) {
-                    console.error("Falha ao analisar JSON:", text);
-                    throw new Error("Resposta do servidor não é JSON válido");
-                }
-                return data;
-            })
-            .then(data => {
-                if (data.status) {
-                    hideUserModal();
-                    showMessage(isEditing ? 'Usuário atualizado com sucesso!' : 'Usuário adicionado com sucesso!');
-                    // Recarregar a página após 1 segundo
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    showMessage(data.message || 'Erro ao processar solicitação', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                showMessage('Erro ao processar a solicitação: ' + error.message, 'danger');
-            })
-            .finally(() => {
-                // Restaurar botão de salvar
-                saveButton.textContent = originalButtonText;
-                saveButton.disabled = false;
-            });
-        }
-
-        // Função para marcar/desmarcar todos os checkboxes
-        function toggleSelectAll() {
-            const selectAll = document.getElementById('selectAll');
-            const checkboxes = document.querySelectorAll('.user-checkbox');
-            
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAll.checked;
-            });
-        }
+        });
+    }
+}
     </script>
 </body>
 </html>

@@ -538,7 +538,7 @@ try {
             }
             
             .page-wrapper {
-                padding: 20px 15px;
+                padding: 75px 20px;
             }
             
             .page-header {

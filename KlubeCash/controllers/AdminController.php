@@ -236,11 +236,46 @@ class AdminController {
     }
     
     /**
-     * Obtém detalhes de um usuário específico
-     * 
-     * @param int $userId ID do usuário
-     * @return array Dados do usuário
-     */
+ * Obtém detalhes de um usuário específico
+ * 
+ * @param int $userId ID do usuário
+ * @return array Dados do usuário
+ */
+public static function getUserDetails($userId) {
+    try {
+        // Verificar se é um administrador
+        if (!self::validateAdmin()) {
+            return ['status' => false, 'message' => 'Acesso restrito a administradores.'];
+        }
+        
+        $db = Database::getConnection();
+        
+        // Obter dados do usuário
+        $stmt = $db->prepare("
+            SELECT id, nome, email, telefone, tipo, status, data_criacao, ultimo_login
+            FROM usuarios
+            WHERE id = :user_id
+        ");
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$user) {
+            return ['status' => false, 'message' => 'Usuário não encontrado.'];
+        }
+        
+        return [
+            'status' => true,
+            'data' => [
+                'usuario' => $user
+            ]
+        ];
+        
+    } catch (PDOException $e) {
+        error_log('Erro ao obter detalhes do usuário: ' . $e->getMessage());
+        return ['status' => false, 'message' => 'Erro ao carregar dados do usuário: ' . $e->getMessage()];
+    }
+}
     
      
     
