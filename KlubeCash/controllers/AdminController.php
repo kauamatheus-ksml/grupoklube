@@ -168,98 +168,27 @@ class AdminController {
             
             $db = Database::getConnection();
             
-            // Preparar consulta base
+            // Consulta simplificada sem filtros
             $query = "
                 SELECT id, nome, email, tipo, status, data_criacao, ultimo_login
                 FROM usuarios
-                WHERE 1=1
+                ORDER BY data_criacao DESC
             ";
-            
-            $params = [];
-            
-            // Aplicar filtros
-            if (!empty($filters)) {
-                // Filtro por tipo
-                if (isset($filters['tipo']) && !empty($filters['tipo'])) {
-                    $query .= " AND tipo = :tipo";
-                    $params[':tipo'] = $filters['tipo'];
-                }
-                
-                // Filtro por status
-                if (isset($filters['status']) && !empty($filters['status'])) {
-                    $query .= " AND status = :status";
-                    $params[':status'] = $filters['status'];
-                }
-                
-                // Filtro por busca (nome ou email)
-                if (isset($filters['busca']) && !empty($filters['busca'])) {
-                    $query .= " AND (nome LIKE :busca_nome OR email LIKE :busca_email)";
-                    $params[':busca_nome'] = '%' . $filters['busca'] . '%';
-                    $params[':busca_email'] = '%' . $filters['busca'] . '%';
-                }
-                
-                // Filtro por data de criação
-                if (isset($filters['data_inicio']) && !empty($filters['data_inicio'])) {
-                    $query .= " AND data_criacao >= :data_inicio";
-                    $params[':data_inicio'] = $filters['data_inicio'] . ' 00:00:00';
-                }
-                
-                if (isset($filters['data_fim']) && !empty($filters['data_fim'])) {
-                    $query .= " AND data_criacao <= :data_fim";
-                    $params[':data_fim'] = $filters['data_fim'] . ' 23:59:59';
-                }
-            }
-            
-            // Ordenação (padrão: data de criação decrescente)
-            $orderBy = isset($filters['order_by']) ? $filters['order_by'] : 'data_criacao';
-            $orderDir = isset($filters['order_dir']) && strtolower($filters['order_dir']) == 'asc' ? 'ASC' : 'DESC';
-            $query .= " ORDER BY $orderBy $orderDir";
             
             // Calcular total de registros para paginação
-            $countQuery = "
-                SELECT COUNT(*) as total 
-                FROM usuarios 
-                WHERE 1=1
-            ";
-            if (!empty($filters)) {
-                if (isset($filters['tipo']) && !empty($filters['tipo'])) {
-                    $countQuery .= " AND tipo = :tipo";
-                }
-                
-                if (isset($filters['status']) && !empty($filters['status'])) {
-                    $countQuery .= " AND status = :status";
-                }
-                
-                if (isset($filters['busca']) && !empty($filters['busca'])) {
-                    $countQuery .= " AND (nome LIKE :busca_nome OR email LIKE :busca_email)";
-                }
-                
-                if (isset($filters['data_inicio']) && !empty($filters['data_inicio'])) {
-                    $countQuery .= " AND data_criacao >= :data_inicio";
-                }
-                
-                if (isset($filters['data_fim']) && !empty($filters['data_fim'])) {
-                    $countQuery .= " AND data_criacao <= :data_fim";
-                }
-            }
-
+            $countQuery = "SELECT COUNT(*) as total FROM usuarios";
             $countStmt = $db->prepare($countQuery);
-            foreach ($params as $param => $value) {
-                $countStmt->bindValue($param, $value);
-            }
             $countStmt->execute();
             $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
             
             // Adicionar paginação
             $perPage = ITEMS_PER_PAGE;
+            $page = max(1, (int)$page); // Garantir que a página é no mínimo 1
             $offset = ($page - 1) * $perPage;
             $query .= " LIMIT $offset, $perPage";
             
             // Executar consulta
             $stmt = $db->prepare($query);
-            foreach ($params as $param => $value) {
-                $stmt->bindValue($param, $value);
-            }
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -276,15 +205,7 @@ class AdminController {
                 FROM usuarios
             ";
             
-            // Aplicar mesmos filtros se necessário
-            if (!empty($filters)) {
-                $statsQuery = str_replace('1=1', '1=1 ' . substr($query, strpos($query, 'WHERE 1=1') + 8, strpos($query, 'ORDER BY') - strpos($query, 'WHERE 1=1') - 8), $statsQuery);
-            }
-            
             $statsStmt = $db->prepare($statsQuery);
-            foreach ($params as $param => $value) {
-                $statsStmt->bindValue($param, $value);
-            }
             $statsStmt->execute();
             $statistics = $statsStmt->fetch(PDO::FETCH_ASSOC);
             
@@ -2041,9 +1962,8 @@ if (basename($_SERVER['PHP_SELF']) === 'AdminController.php') {
             break;
             
         case 'users':
-            $filters = $_POST['filters'] ?? [];
             $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
-            $result = AdminController::manageUsers($filters, $page);
+            $result = AdminController::manageUsers([], $page);
             echo json_encode($result);
             break;
             

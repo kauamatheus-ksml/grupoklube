@@ -19,23 +19,9 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_type']) || $_SESSION[
     exit;
 }
 
-// Obter parâmetros de paginação e filtros
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$search = isset($_GET['search']) ? $_GET['search'] : '';
-$status = isset($_GET['status']) ? $_GET['status'] : '';
-$type = isset($_GET['type']) ? $_GET['type'] : '';
-
-// Preparar filtros
+// Inicializar variáveis de paginação
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $filters = [];
-if (!empty($search)) {
-    $filters['busca'] = trim($search);
-}
-if (!empty($status)) {
-    $filters['status'] = $status;
-}
-if (!empty($type)) {
-    $filters['tipo'] = $type;
-}
 
 // Verificar valores dos filtros para debug
 error_log('Filtros preparados: ' . print_r($filters, true));
@@ -601,42 +587,6 @@ try {
                 </div>
             <?php else: ?>
             
-            <!-- Barra de Busca e Filtros -->
-            <div class="actions-bar">
-                <form method="GET" action="" class="filters-form" id="searchForm">
-                    <div class="search-bar">
-                        <input type="text" name="search" id="searchInput" placeholder="Buscar por nome ou email..." value="<?php echo htmlspecialchars($search); ?>">
-                        <button type="submit" class="search-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <div class="filter-controls">
-                        <select name="status" id="statusFilter" class="form-select" style="width: auto; display: inline-block; margin-right: 10px;">
-                            <option value="">Todos os status</option>
-                            <option value="ativo" <?php echo $status === 'ativo' ? 'selected' : ''; ?>>Ativo</option>
-                            <option value="inativo" <?php echo $status === 'inativo' ? 'selected' : ''; ?>>Inativo</option>
-                            <option value="bloqueado" <?php echo $status === 'bloqueado' ? 'selected' : ''; ?>>Bloqueado</option>
-                        </select>
-                        
-                        <select name="type" id="typeFilter" class="form-select" style="width: auto; display: inline-block;">
-                            <option value="">Todos os tipos</option>
-                            <option value="cliente" <?php echo $type === 'cliente' ? 'selected' : ''; ?>>Cliente</option>
-                            <option value="admin" <?php echo $type === 'admin' ? 'selected' : ''; ?>>Administrador</option>
-                            <option value="loja" <?php echo $type === 'loja' ? 'selected' : ''; ?>>Loja</option>
-                        </select>
-                        
-                        <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Filtrar</button>
-                    </div>
-                    
-                    <!-- Sempre começar pela primeira página quando filtrar -->
-                    <input type="hidden" name="page" value="1">
-                </form>
-            </div>
-            
             <!-- Card Principal -->
             <div class="card">
                 <!-- Tabela de Usuários -->
@@ -720,10 +670,10 @@ try {
                     </table>
                 </div>
                 
-                <!-- Paginação -->
+                <!-- Paginação corrigida -->
                 <?php if (!empty($pagination) && $pagination['total_paginas'] > 1): ?>
                     <div class="pagination">
-                        <a href="?page=<?php echo max(1, $page - 1); ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status); ?>&type=<?php echo urlencode($type); ?>" class="pagination-arrow">
+                        <a href="?page=<?php echo max(1, $page - 1); ?>" class="pagination-arrow">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
@@ -738,12 +688,12 @@ try {
                             
                             for ($i = $startPage; $i <= $endPage; $i++): 
                         ?>
-                            <a href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status); ?>&type=<?php echo urlencode($type); ?>" class="pagination-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                            <a href="?page=<?php echo $i; ?>" class="pagination-item <?php echo ($i == $page) ? 'active' : ''; ?>">
                                 <?php echo $i; ?>
                             </a>
                         <?php endfor; ?>
                         
-                        <a href="?page=<?php echo min($pagination['total_paginas'], $page + 1); ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status); ?>&type=<?php echo urlencode($type); ?>" class="pagination-arrow">
+                        <a href="?page=<?php echo min($pagination['total_paginas'], $page + 1); ?>" class="pagination-arrow">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
@@ -1058,44 +1008,6 @@ try {
                 checkbox.checked = selectAll.checked;
             });
         }
-        // Adicionar comportamento para os filtros
-        document.addEventListener('DOMContentLoaded', function() {
-            // Submeter o formulário quando os filtros select forem alterados
-            document.getElementById('statusFilter').addEventListener('change', function() {
-                document.getElementById('searchForm').submit();
-            });
-            
-            document.getElementById('typeFilter').addEventListener('change', function() {
-                document.getElementById('searchForm').submit();
-            });
-        });
-        // Melhorar a funcionalidade de pesquisa
-        document.addEventListener('DOMContentLoaded', function() {
-            // Focar o campo de busca quando a página carrega
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput.value) {
-                // Se já tiver texto, posicione o cursor no final
-                const len = searchInput.value.length;
-                searchInput.setSelectionRange(len, len);
-            }
-            
-            // Permitir pesquisa ao pressionar Enter
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    document.getElementById('searchForm').submit();
-                }
-            });
-            
-            // Limpar pesquisa quando o campo estiver vazio e o usuário pressionar Backspace
-            searchInput.addEventListener('keyup', function(e) {
-                if (e.key === 'Backspace' && this.value === '') {
-                    const currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.delete('search');
-                    window.location.href = currentUrl.toString();
-                }
-            });
-        });
     </script>
 </body>
 </html>
