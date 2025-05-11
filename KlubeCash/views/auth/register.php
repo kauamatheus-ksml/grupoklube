@@ -65,12 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $senha_hash = password_hash($senha, PASSWORD_DEFAULT);
                 
                 // Inserir novo usuário
-                $stmt = $db->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo) VALUES (:nome, :email, :senha_hash, :tipo)");
+                $stmt = $db->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo, telefone) VALUES (:nome, :email, :senha_hash, :tipo, :telefone)");
                 $stmt->bindParam(':nome', $nome);
                 $stmt->bindParam(':email', $email);
                 $stmt->bindParam(':senha_hash', $senha_hash);
                 $tipo = USER_TYPE_CLIENT;
                 $stmt->bindParam(':tipo', $tipo);
+                $stmt->bindParam(':telefone', $telefone);
                 
                 if ($stmt->execute()) {
                     $user_id = $db->lastInsertId();
@@ -399,14 +400,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <!-- Versão Mobile -->
     <div class="logo-container">
-        <img src="../../assets/images/logo.png" alt="KlubeCash">
+        <img src="../../assets/images/logobranco.png" alt="KlubeCash">
     </div>
 
     <!-- Versão Desktop -->
     <div class="register-page">
         <div class="left-panel">
             <div class="logo-container-desktop">
-                <img src="../../assets/images/logo.png" alt="KlubeCash">
+                <img src="../../assets/images/logobranco.png" alt="KlubeCash">
             </div>
             <div class="illustrations">
                 <img src="../../assets/images/illustrations/businessman-coin.svg" alt="" class="illustration-left">

@@ -55,8 +55,8 @@ define('MIN_TRANSACTION_VALUE', 5.00);  // Valor mínimo de transação: R$ 5,00
 define('MIN_WITHDRAWAL_VALUE', 20.00);  // Valor mínimo para saque: R$ 20,00
 
 // Caminhos de URL
-define('LOGIN_URL', SITE_URL . '/views/auth/login');
+define('LOGIN_URL', SITE_URL . '/login');
 define('REGISTER_URL', SITE_URL . '/registro');
 define('RECOVER_PASSWORD_URL', SITE_URL . '/recuperar-senha');
-define('CLIENT_DASHBOARD_URL', SITE_URL . '/views/admin/dashboard');
-define('ADMIN_DASHBOARD_URL', SITE_URL . '/views/admin/dashboard');
+define('CLIENT_DASHBOARD_URL', SITE_URL . '/cliente/dashboard');
+define('ADMIN_DASHBOARD_URL', SITE_URL . '/admin/dashboard');

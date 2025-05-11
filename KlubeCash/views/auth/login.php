@@ -400,14 +400,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <!-- Versão Mobile -->
     <div class="logo-container">
-        <img src="../../assets/images/logo1.png" alt="KlubeCash">
+        <img src="../../assets/images/logobranco.png" alt="KlubeCash">
     </div>
 
     <!-- Versão Desktop -->
     <div class="login-page">
         <div class="left-panel">
             <div class="logo-container-desktop">
-                <img src="../../assets/images/logo1.png" alt="KlubeCash">
+                <img src="../../assets/images/logobranco.png" alt="KlubeCash">
             </div>
             <div class="illustrations">
                 <img src="../../assets/images/illustrations/businessman-coin.svg" alt="" class="illustration-left">

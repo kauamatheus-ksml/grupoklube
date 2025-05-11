@@ -405,14 +405,14 @@ if (isset($_GET['token']) && !empty($_GET['token'])) {
 <body>
     <!-- Versão Mobile -->
     <div class="logo-container">
-        <img src="../../assets/images/logo.png" alt="KlubeCash">
+        <img src="../../assets/images/logobranco.png" alt="KlubeCash">
     </div>
 
     <!-- Versão Desktop -->
     <div class="recover-page">
         <div class="left-panel">
             <div class="logo-container-desktop">
-                <img src="../../assets/images/logo.png" alt="KlubeCash">
+                <img src="../../assets/images/logobranco.png" alt="KlubeCash">
             </div>
         </div>
 

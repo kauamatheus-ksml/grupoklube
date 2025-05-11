@@ -124,7 +124,7 @@ class Email {
      * @return string Email formatado com o template
      */
     private static function getEmailTemplate($content) {
-        // Template básico de email
+        // Template atualizado com a identidade visual do sistema
         $template = '
         <!DOCTYPE html>
         <html>
@@ -133,23 +133,92 @@ class Email {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Klube Cash</title>
             <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
-                .header { background-color: #3498db; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; }
-                .footer { background-color: #f8f8f8; padding: 15px; text-align: center; font-size: 12px; color: #777; }
-                .btn { display: inline-block; background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+                body { 
+                    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; 
+                    line-height: 1.6; 
+                    color: #333333; 
+                    background-color: #FFF9F2; 
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    background-color: #FFFFFF; 
+                    border-radius: 15px; 
+                    overflow: hidden;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                }
+                .header { 
+                    background: linear-gradient(135deg, #FF7A00, #FF9A40);
+                    color: white; 
+                    padding: 20px; 
+                    text-align: center; 
+                }
+                .logo {
+                    max-width: 150px;
+                    height: auto;
+                }
+                .content { 
+                    padding: 30px; 
+                    background-color: #FFFFFF;
+                }
+                .footer { 
+                    background-color: #FFF0E6; 
+                    padding: 20px; 
+                    text-align: center; 
+                    font-size: 14px; 
+                    color: #666666; 
+                    border-top: 1px solid #FFD9B3;
+                }
+                .btn { 
+                    display: inline-block; 
+                    background-color: #FF7A00; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    text-decoration: none; 
+                    border-radius: 30px; 
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                .btn:hover {
+                    background-color: #E06E00;
+                }
+                h2 {
+                    color: #333333;
+                    margin-top: 0;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                }
+                table th, table td {
+                    padding: 12px;
+                    text-align: left;
+                    border: 1px solid #eee;
+                }
+                table th {
+                    background-color: #FFF0E6;
+                    color: #333333;
+                    font-weight: 600;
+                }
+                table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>Klube Cash</h1>
-            </div>
-            <div class="content">
-                ' . $content . '
-            </div>
-            <div class="footer">
-                <p>&copy; ' . date('Y') . ' Klube Cash. Todos os direitos reservados.</p>
-                <p>Este é um email automático, por favor não responda.</p>
+            <div class="container">
+                <div class="header">
+                    <img src="' . SITE_URL . '/assets/images/logobranco.png" alt="Klube Cash" class="logo">
+                </div>
+                <div class="content">
+                    ' . $content . '
+                </div>
+                <div class="footer">
+                    <p>&copy; ' . date('Y') . ' Klube Cash. Todos os direitos reservados.</p>
+                    <p>Este é um email automático, por favor não responda.</p>
+                </div>
             </div>
         </body>
         </html>';
@@ -239,21 +308,21 @@ class Email {
         <h2>Olá, ' . htmlspecialchars($name) . '!</h2>
         <p>Você acabou de receber cashback de uma compra:</p>
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Loja</th>
-                <td style="padding: 10px; border: 1px solid #ddd;">' . htmlspecialchars($transaction['loja']) . '</td>
+            <tr>
+                <th>Loja</th>
+                <td>' . htmlspecialchars($transaction['loja']) . '</td>
             </tr>
             <tr>
-                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Valor da Compra</th>
-                <td style="padding: 10px; border: 1px solid #ddd;">R$ ' . number_format($transaction['valor_total'], 2, ',', '.') . '</td>
-            </tr>
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Cashback</th>
-                <td style="padding: 10px; border: 1px solid #ddd;">R$ ' . number_format($transaction['valor_cashback'], 2, ',', '.') . '</td>
+                <th>Valor da Compra</th>
+                <td>R$ ' . number_format($transaction['valor_total'], 2, ',', '.') . '</td>
             </tr>
             <tr>
-                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Data</th>
-                <td style="padding: 10px; border: 1px solid #ddd;">' . date('d/m/Y H:i', strtotime($transaction['data_transacao'])) . '</td>
+                <th>Cashback</th>
+                <td>R$ ' . number_format($transaction['valor_cashback'], 2, ',', '.') . '</td>
+            </tr>
+            <tr>
+                <th>Data</th>
+                <td>' . date('d/m/Y H:i', strtotime($transaction['data_transacao'])) . '</td>
             </tr>
         </table>
         <p>Para ver mais detalhes, acesse seu extrato:</p>
